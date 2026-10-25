@@ -296,7 +296,7 @@ object AppConfig {
             FieldSpec("e", "البريد / الحساب", "Email / account"),
             FieldSpec("d", "تاريخ الشراء", "Purchase date"),
             FieldSpec("r", "تاريخ التجديد", "Renewal date"),
-            FieldSpec("n", "ملاحظات", "Notes", multiline = true)), allowDocs = false, icon = "💾"),
+            FieldSpec("n", "ملاحظات", "Notes", multiline = true)), allowMedia = false, icon = "💾"),
 
         VaultSpec("recovery_codes", "أكواد استرداد", "Recovery codes", listOf(
             FieldSpec("s", "الخدمة", "Service"),
@@ -1014,7 +1014,7 @@ object VaultStore {
 // Saves encrypted .kkv files directly to internal storage, 
 // completely eliminating the need to save/download separate files.
 // ============================================================
-class VaultMeta(
+data class VaultMeta(
     val id: String,
     val title: String,
     val type: String,
@@ -2280,6 +2280,18 @@ class MainActivity : Activity() {
         parent.addView(outlineButton(tr("📤 تشفير ومشاركة", "📤 Encrypt & share"), 52).apply { layoutParams = lp(h = dp(52), top = 10); setOnClickListener { onEncryptClicked(spec, Out.SHARE) } })
     }
 
+private fun animateStrength(bar: ProgressBar, label: TextView, p: Int, color: Int, text: String) {
+    label.text = text
+    val from = (bar.tag as? Int) ?: AppConfig.TEXT_MUTED
+    bar.tag = color
+    if (!effectsOn()) { bar.progress = p; bar.progressTintList = ColorStateList.valueOf(color); label.setTextColor(color); return }
+    ObjectAnimator.ofInt(bar, "progress", p).setDuration(300).start()
+    ValueAnimator.ofObject(ArgbEvaluator(), from, color).apply {
+        duration = 300
+        addUpdateListener { val cc = it.animatedValue as Int; bar.progressTintList = ColorStateList.valueOf(cc); label.setTextColor(cc) }
+        start()
+    }
+}
 
     private fun buildCustomRows(parent: LinearLayout) {
         customRows.forEachIndexed { i, r ->
@@ -2379,7 +2391,11 @@ class MainActivity : Activity() {
         // Shamir split
         var shamirShares: List<String>? = null
         if (shamirN > 0) {
-            shamirShares = ShamirEngine.split(pass.toByteArray(Charsets.UTF_8), shamirN, shamirK)
+            var shamirShares: List<String>? = null
+if (shamirN > 0) {
+    shamirShares = ShamirEngine.split(pass.toByteArray(Charsets.UTF_8), shamirN, shamirK)
+    if (shamirShares == null) { toast(tr("فشل تقسيم المفتاح", "Key split failed")); return }
+}
             if (shamirShares == null) { toast(tr("فشل تقسيم المفتاح", "Key split failed")); return }
         }
         

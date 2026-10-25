@@ -5,16 +5,21 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.app.KeyguardManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
+import android.database.Cursor
+import android.database.MatrixCursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -36,6 +41,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.os.PersistableBundle
 import android.provider.OpenableColumns
 import android.provider.Settings
@@ -70,10 +76,6 @@ import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.FileProvider
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -97,7 +99,8 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.math.ln
 
-// Requirements: minSdk 26, deps: androidx.activity:activity-ktx, androidx.core:core-ktx (see SETUP.md)
+// Requirements: minSdk 26, compileSdk 33+. No androidx dependencies needed (plain android.app.Activity).
+// Manifest must declare VaultShareProvider (see bottom of this file).
 
 private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
 private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -780,7 +783,7 @@ object VaultStore {
 // ============================================================
 // MAIN ACTIVITY
 // ============================================================
-class MainActivity : ComponentActivity() {
+class MainActivity : Activity() {
 
     private class CustomRow(var name: String = "", var value: String = "", var secret: Boolean = false)
     private class Collected(val data: LinkedHashMap<String, String>, val secrets: List<String>, val totps: List<String>)
@@ -820,16 +823,23 @@ class MainActivity : ComponentActivity() {
     private lateinit var contentHolder: FrameLayout
     private lateinit var overlay: FrameLayout
 
-    // ---- Activity Result API (edit #2)
+    // ---- Activity results (platform API, no androidx needed)
     private var onResult: ((Int, Intent?) -> Unit)? = null
-    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        val cb = onResult; onResult = null; cb?.invoke(r.resultCode, r.data)
-    }
+    private val REQ_CODE = 7001
     private fun launchForResult(intent: Intent, cb: (Int, Intent?) -> Unit) {
-        suppressLockOnce = true; onResult = cb; launcher.launch(intent)
+        suppressLockOnce = true; onResult = cb
+        @Suppress("DEPRECATION") startActivityForResult(intent, REQ_CODE)
+    }
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_CODE) { val cb = onResult; onResult = null; cb?.invoke(resultCode, data) }
     }
 
-    private val backCallback = object : OnBackPressedCallback(false) { override fun handleOnBackPressed() { goHome() } }
+    // ---- back button
+    private var backEnabled = false
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onBackPressed() { if (backEnabled) goHome() else super.onBackPressed() }
 
     // ============================================================ lifecycle
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -837,7 +847,6 @@ class MainActivity : ComponentActivity() {
         try {
             VaultStore.init(this)
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-            onBackPressedDispatcher.addCallback(this, backCallback)
             applyScreenSecurity()
             rootContainer = FrameLayout(this); contentHolder = FrameLayout(this); overlay = FrameLayout(this)
             rootContainer.addView(contentHolder, FrameLayout.LayoutParams(MATCH, MATCH))
@@ -1078,7 +1087,7 @@ class MainActivity : ComponentActivity() {
     private fun renderUI() {
         applyScreenSecurity()
         handler.removeCallbacks(totpTick); totpEntries.clear()
-        backCallback.isEnabled = currentScreen == "create" || currentScreen == "open" || currentScreen == "view"
+        backEnabled = currentScreen == "create" || currentScreen == "open" || currentScreen == "view"
         val fx = effectsOn()
         val screenChanged = currentScreen != lastRenderedScreen
         val forward = currentScreen != "home"
@@ -1537,7 +1546,7 @@ class MainActivity : ComponentActivity() {
         try {
             val dir = File(cacheDir, "shared").apply { mkdirs() }
             val f = File(dir, fileName); f.writeText(html, Charsets.UTF_8)
-            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", f)
+            val uri = Uri.parse("content://$packageName.vaultshare/shared/" + Uri.encode(fileName))
             val send = Intent(Intent.ACTION_SEND).apply { type = "text/html"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             suppressLockOnce = true
             startActivity(Intent.createChooser(send, tr("مشاركة الخزنة المشفرة", "Share encrypted vault")))
@@ -1988,4 +1997,42 @@ class MainActivity : ComponentActivity() {
         while (s >= 1024 && i < units.size - 1) { s /= 1024; i++ }
         return String.format(Locale.US, "%.1f %s", s, units[i])
     }
+}
+
+// ============================================================
+// SHARE PROVIDER (replaces androidx FileProvider; no extra dependency)
+// Manifest entry required inside <application>:
+//   <provider
+//       android:name="com.keep.aio.VaultShareProvider"
+//       android:authorities="${applicationId}.vaultshare"
+//       android:exported="false"
+//       android:grantUriPermissions="true" />
+// ============================================================
+class VaultShareProvider : ContentProvider() {
+    private fun fileFor(uri: Uri): File? {
+        val ctx = context ?: return null
+        val dir = File(ctx.cacheDir, "shared").canonicalFile
+        val name = uri.lastPathSegment ?: return null
+        val f = File(dir, name).canonicalFile
+        return if (f.parentFile == dir && f.exists()) f else null
+    }
+
+    override fun onCreate(): Boolean = true
+
+    override fun getType(uri: Uri): String = "text/html"
+
+    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor? {
+        val f = fileFor(uri) ?: throw java.io.FileNotFoundException(uri.toString())
+        return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY)
+    }
+
+    override fun query(uri: Uri, projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, sortOrder: String?): Cursor? {
+        val f = fileFor(uri) ?: return null
+        val cols = arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
+        return MatrixCursor(cols).apply { addRow(arrayOf<Any>(f.name, f.length())) }
+    }
+
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+    override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
 }

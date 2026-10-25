@@ -8,16 +8,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.InputType
@@ -278,15 +273,23 @@ object VaultStore {
     var lastActivity = "لا يوجد"
 
     fun init(ctx: Context) {
-        prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        loadStats()
+        try {
+            prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            loadStats()
+        } catch (e: Exception) {
+            // Fallback to defaults
+        }
     }
 
     fun loadStats() {
-        vaultCount = prefs.getInt("v_count", 0)
-        attachmentCount = prefs.getInt("a_count", 0)
-        usedSpace = prefs.getLong("u_space", 0L)
-        lastActivity = prefs.getString("l_act", "لا يوجد") ?: "لا يوجد"
+        try {
+            vaultCount = prefs.getInt("v_count", 0)
+            attachmentCount = prefs.getInt("a_count", 0)
+            usedSpace = prefs.getLong("u_space", 0L)
+            lastActivity = prefs.getString("l_act", "لا يوجد") ?: "لا يوجد"
+        } catch (e: Exception) {
+            // Ignore and keep defaults
+        }
     }
 
     fun addVaultStats(attachments: Int, size: Long) {
@@ -302,11 +305,11 @@ object VaultStore {
             .apply()
     }
 
-    fun isScreenSecure(): Boolean = prefs.getBoolean("secure_screen", false)
-    fun setScreenSecure(v: Boolean) { prefs.edit().putBoolean("secure_screen", v).apply() }
+    fun isScreenSecure(): Boolean = try { prefs.getBoolean("secure_screen", false) } catch (e: Exception) { false }
+    fun setScreenSecure(v: Boolean) { try { prefs.edit().putBoolean("secure_screen", v).apply() } catch (e: Exception) {} }
     
-    fun isAutoLock(): Boolean = prefs.getBoolean("auto_lock", true)
-    fun setAutoLock(v: Boolean) { prefs.edit().putBoolean("auto_lock", v).apply() }
+    fun isAutoLock(): Boolean = try { prefs.getBoolean("auto_lock", true) } catch (e: Exception) { true }
+    fun setAutoLock(v: Boolean) { try { prefs.edit().putBoolean("auto_lock", v).apply() } catch (e: Exception) {} }
 }
 
 // ============================================================
@@ -332,10 +335,16 @@ class MainActivity : Activity() {
     private var currentSearchQuery = ""
     private var lastPausedTime = 0L
 
+    private lateinit var rootContainer: FrameLayout
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         VaultStore.init(this)
         applyScreenSecurity()
+        
+        rootContainer = FrameLayout(this)
+        setContentView(rootContainer)
+        
         showSplashScreen()
     }
 
@@ -356,11 +365,13 @@ class MainActivity : Activity() {
     }
 
     private fun applyScreenSecurity() {
-        if (VaultStore.isScreenSecure()) {
-            window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        }
+        try {
+            if (VaultStore.isScreenSecure()) {
+                window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+        } catch (e: Exception) {}
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
@@ -391,10 +402,15 @@ class MainActivity : Activity() {
     }
 
     // ---------------------------------------------------------
-    // SPLASH SCREEN (Using setContentView directly)
+    // SPLASH SCREEN
     // ---------------------------------------------------------
     private fun showSplashScreen() {
-        val root = FrameLayout(this).apply { setBackgroundColor(AppConfig.BG_OBSIDIAN) }
+        val root = FrameLayout(this).apply { 
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(AppConfig.BG_OBSIDIAN, Color.parseColor("#151A20"))
+            )
+        }
         
         val center = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -415,7 +431,9 @@ class MainActivity : Activity() {
         center.addView(crown)
         center.addView(title)
         root.addView(center)
-        setContentView(root) // Set the splash screen as the main view
+        
+        rootContainer.removeAllViews()
+        rootContainer.addView(root)
 
         val anim = ScaleAnimation(0.5f, 1f, 0.5f, 1f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
         anim.duration = 1000
@@ -428,19 +446,27 @@ class MainActivity : Activity() {
         crown.startAnimation(anim)
         title.startAnimation(fade)
 
-        Handler(Looper.getMainLooper()).postDelayed({
+        window.decorView.postDelayed({
             currentScreen = "home"
-            renderUI() // Now renderUI will replace the splash screen
+            try {
+                renderUI()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }, 2000)
     }
 
     // ---------------------------------------------------------
-    // MAIN RENDERER (Replaces entire content view)
+    // MAIN RENDERER
     // ---------------------------------------------------------
     private fun renderUI() {
         applyScreenSecurity()
-        val root = FrameLayout(this).apply { setBackgroundColor(AppConfig.BG_OBSIDIAN) }
-        root.addView(RoyalBackgroundView(this))
+        val root = FrameLayout(this).apply { 
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(AppConfig.BG_OBSIDIAN, Color.parseColor("#151A20"))
+            )
+        }
 
         val scrollView = ScrollView(this).apply {
             layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -475,7 +501,8 @@ class MainActivity : Activity() {
             "view" -> buildView(container)
         }
 
-        setContentView(root) // Replace the current view with the new layout
+        rootContainer.removeAllViews()
+        rootContainer.addView(root)
     }
 
     // ---------------------------------------------------------
@@ -557,13 +584,15 @@ class MainActivity : Activity() {
         parent.addView(createLabel("نوع البيانات"))
         val typeSpinner = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, arrayOf("ملاحظة سرية", "بيانات حساب", "مستند / صور"))
+            val initialPos = when(selectedVaultType) { "note" -> 0; "account" -> 1; else -> 2 }
+            setSelection(initialPos, false)
             background = luxuryBg(AppConfig.CARD_DARK, 8, 1, Color.parseColor("#333A45"))
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                     val newType = when(p2) { 0 -> "note"; 1 -> "account"; else -> "document" }
                     if (selectedVaultType != newType) {
                         selectedVaultType = newType
-                        parent.post { renderUI() } // Post to main thread to avoid layout loop
+                        parent.post { renderUI() }
                     }
                 }
                 override fun onNothingSelected(p0: AdapterView<*>?) {}
@@ -1047,42 +1076,5 @@ class MainActivity : Activity() {
             } finally { cursor?.close() }
         }
         return result ?: "file_${System.currentTimeMillis()}"
-    }
-}
-
-// ============================================================
-// CUSTOM VIEW: ROYAL BACKGROUND
-// ============================================================
-class RoyalBackgroundView(context: Context) : View(context) {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-        color = Color.parseColor("#222533")
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        val w = width.toFloat()
-        val h = height.toFloat()
-        
-        val path = Path()
-        // Top Left
-        path.moveTo(40f, 80f); path.lineTo(40f, 40f); path.lineTo(80f, 40f)
-        // Top Right
-        path.moveTo(w - 80f, 40f); path.lineTo(w - 40f, 40f); path.lineTo(w - 40f, 80f)
-        // Bottom Left
-        path.moveTo(40f, h - 80f); path.lineTo(40f, h - 40f); path.lineTo(80f, h - 40f)
-        // Bottom Right
-        path.moveTo(w - 80f, h - 40f); path.lineTo(w - 40f, h - 40f); path.lineTo(w - 40f, h - 80f)
-        
-        canvas.drawPath(path, paint)
-        
-        val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            shader = android.graphics.RadialGradient(w / 2f, 100f, 200f,
-                intArrayOf(Color.parseColor("#33D4AF37"), Color.TRANSPARENT),
-                floatArrayOf(0f, 1f), android.graphics.Shader.TileMode.CLAMP)
-        }
-        canvas.drawCircle(w / 2f, 100f, 200f, glowPaint)
     }
 }

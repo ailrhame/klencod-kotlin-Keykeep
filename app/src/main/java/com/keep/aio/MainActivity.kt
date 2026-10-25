@@ -3,19 +3,21 @@ package com.keep.aio
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -42,6 +44,11 @@ class MainActivity : Activity() {
     private var currentScreen = "home"
     private var pendingSaveHtml = ""
     private val mediaItems = mutableListOf<JSONObject>()
+    
+    // Native extraction state
+    private var decryptedPayloadJson: String? = null
+    private var pendingSaveFileData: String? = null
+    private var pendingSaveFileMime: String? = null
 
     // ROYAL PALETTE
     private val BG_OBSIDIAN = Color.parseColor("#0B0C10")
@@ -58,7 +65,6 @@ class MainActivity : Activity() {
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    // Luxury Card Background (Dark with Gold Border)
     private fun luxuryBg(color: Int, radius: Int, strokeWidth: Int = 1, strokeColor: Int = GOLD_PRIMARY): GradientDrawable {
         return GradientDrawable().apply {
             setColor(color)
@@ -67,7 +73,6 @@ class MainActivity : Activity() {
         }
     }
 
-    // Luxury Button (Gold Gradient)
     private fun applyGoldGradient(view: View) {
         val gradient = GradientDrawable(
             GradientDrawable.Orientation.LEFT_RIGHT,
@@ -79,7 +84,6 @@ class MainActivity : Activity() {
     }
 
     private fun renderRoyalUI() {
-        // Main Container with a deep dark background
         val root = FrameLayout(this).apply {
             setBackgroundColor(BG_OBSIDIAN)
         }
@@ -95,7 +99,13 @@ class MainActivity : Activity() {
         scrollView.addView(container)
         root.addView(scrollView)
 
-        // Header
+        val crown = TextView(this).apply {
+            text = "👑"
+            textSize = 36f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(8))
+        }
+
         val title = TextView(this).apply {
             text = "KEYKEEP"
             textSize = 32f
@@ -103,13 +113,6 @@ class MainActivity : Activity() {
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             letterSpacing = 0.2f
             gravity = Gravity.CENTER
-        }
-        
-        val crown = TextView(this).apply {
-            text = "👑"
-            textSize = 36f
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(8))
         }
 
         val subtitle = TextView(this).apply {
@@ -134,6 +137,7 @@ class MainActivity : Activity() {
             "home" -> buildHome(contentArea)
             "create" -> buildCreate(contentArea)
             "open" -> buildOpen(contentArea)
+            "view" -> buildView(contentArea)
         }
 
         setContentView(root)
@@ -179,7 +183,7 @@ class MainActivity : Activity() {
         val msgInput = createLuxuryInput("اكتب رسالتك هنا...", true)
         card.addView(msgInput)
 
-        card.addView(createLuxuryLabel("مفتاح التشفير (كلمة المرور)"))
+        card.addView(createLuxuryLabel("مفتاح التشفير"))
         val passInput = createLuxuryInput("كلمة مرور قوية", false)
         passInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         card.addView(passInput)
@@ -190,13 +194,14 @@ class MainActivity : Activity() {
         card.addView(passConfirmInput)
 
         val btnAddMedia = Button(this).apply {
-            text = "➕ إرفاق مستند"
+            text = "➕ إرفاق مستندات/صور (متعدد)"
             setTextColor(GOLD_PRIMARY)
             background = luxuryBg(Color.TRANSPARENT, 8, 1, GOLD_PRIMARY)
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Batch selection
                 }
                 startActivityForResult(intent, 2001)
             }
@@ -205,7 +210,7 @@ class MainActivity : Activity() {
         card.addView(btnAddMedia)
 
         val mediaStatus = TextView(this).apply {
-            text = if (mediaItems.isEmpty()) "لا توجد مرفقات" else "تم إضافة ${mediaItems.size} مرفق"
+            text = if (mediaItems.isEmpty()) "لا توجد مرفقات" else "تم إرفاق ${mediaItems.size} عنصر"
             setTextColor(TEXT_MUTED)
             textSize = 12f
             setPadding(0, dp(8), 0, dp(16))
@@ -226,6 +231,13 @@ class MainActivity : Activity() {
 
                 if (pass.isEmpty() || pass != confirm) {
                     Toast.makeText(this@MainActivity, "المفاتيح غير متطابقة", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Prevent huge HTML files that might crash mobile browsers
+                val totalSize = mediaItems.sumOf { it.optString("data").length }
+                if (totalSize > 50 * 1024 * 1024) {
+                    Toast.makeText(this@MainActivity, "حجم المرفقات كبير جداً (الحد الأقصى ~35MB)", Toast.LENGTH_LONG).show()
                     return@setOnClickListener
                 }
 
@@ -283,6 +295,107 @@ class MainActivity : Activity() {
         parent.addView(btnBack)
     }
 
+    private fun buildView(parent: LinearLayout) {
+        val jsonStr = decryptedPayloadJson ?: run {
+            currentScreen = "home"
+            renderRoyalUI()
+            return
+        }
+
+        try {
+            val json = JSONObject(jsonStr)
+            val msg = json.optString("message", "")
+            
+            if (msg.isNotEmpty()) {
+                val msgBox = TextView(this).apply {
+                    text = msg
+                    setTextColor(TEXT_WHITE)
+                    textSize = 16f
+                    setLineSpacing(0f, 1.3f)
+                    setPadding(dp(16), dp(16), dp(16), dp(16))
+                    background = luxuryBg(CARD_DARK, 12, 1, GOLD_PRIMARY)
+                    layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.bottomMargin = dp(20) }
+                }
+                parent.addView(msgBox)
+            }
+            
+            val media = json.optJSONArray("media")
+            if (media != null && media.length() > 0) {
+                for (i in 0 until media.length()) {
+                    val item = media.getJSONObject(i)
+                    val kind = item.optString("kind")
+                    val data = item.optString("data")
+                    val name = item.optString("name", "File")
+                    
+                    val card = LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        background = luxuryBg(CARD_DARK, 12, 1, Color.parseColor("#333A45"))
+                        setPadding(dp(16), dp(16), dp(16), dp(16))
+                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.bottomMargin = dp(16) }
+                    }
+                    
+                    if (kind == "image") {
+                        val imgView = ImageView(this).apply {
+                            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250))
+                            scaleType = ImageView.ScaleType.FIT_CENTER
+                            try {
+                                val b64 = data.substringAfter(",")
+                                val bytes = Base64.getDecoder().decode(b64)
+                                val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                setImageBitmap(bmp)
+                            } catch (e: Exception) {}
+                        }
+                        card.addView(imgView)
+                    } else {
+                        val icon = TextView(this).apply {
+                            text = "📎 $name"
+                            setTextColor(TEXT_WHITE)
+                            textSize = 14f
+                            setPadding(0, dp(8), 0, dp(8))
+                        }
+                        card.addView(icon)
+                    }
+                    
+                    val btnSave = Button(this).apply {
+                        text = "حفظ العنصر"
+                        setTextColor(Color.BLACK)
+                        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                        applyGoldGradient(this)
+                        setOnClickListener {
+                            val mime = if (data.startsWith("data:")) data.substringAfter("data:").substringBefore(";") else "application/octet-stream"
+                            pendingSaveFileData = if (data.contains(",")) data.substringAfter(",") else data
+                            pendingSaveFileMime = mime
+                            
+                            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                type = mime
+                                putExtra(Intent.EXTRA_TITLE, name)
+                            }
+                            startActivityForResult(intent, 3001)
+                        }
+                    }
+                    card.addView(btnSave)
+                    parent.addView(card)
+                }
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "خطأ في قراءة المحتوى", Toast.LENGTH_SHORT).show()
+        }
+        
+        val btnBack = Button(this).apply {
+            text = "إغلاق الخزنة"
+            setTextColor(TEXT_MUTED)
+            background = null
+            setOnClickListener { 
+                decryptedPayloadJson = null
+                currentScreen = "home"
+                renderRoyalUI() 
+            }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(16) }
+        }
+        parent.addView(btnBack)
+    }
+
     private fun createLuxuryLabel(text: String): TextView {
         return TextView(this).apply {
             this.text = text
@@ -312,34 +425,83 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode != RESULT_OK) return
-        val uri = data?.data ?: return
 
         when (requestCode) {
-            2001 -> handleMediaSelection(uri)
-            1001 -> handleSaveHtml(uri)
-            1002 -> handleOpenVault(uri)
+            2001 -> handleMediaSelectionIntent(data)
+            1001 -> data?.data?.let { handleSaveHtml(it) }
+            1002 -> data?.data?.let { handleOpenVault(it) }
+            3001 -> handleNativeFileSave(data?.data)
         }
     }
 
-    private fun handleMediaSelection(uri: Uri) {
-        try {
-            val mime = contentResolver.getType(uri) ?: "application/octet-stream"
-            val name = uri.lastPathSegment?.substringAfterLast('/') ?: "file"
-            val bytes = contentResolver.openInputStream(uri)?.readBytes() ?: return
-            val b64 = Base64.getEncoder().encodeToString(bytes)
-            val kind = if (mime.startsWith("image/")) "image" else "file"
-            
-            val item = JSONObject().apply {
-                put("kind", kind)
-                put("data", "data:$mime;base64,$b64")
-                put("name", name)
+    private fun handleMediaSelectionIntent(data: Intent?) {
+        if (data == null) return
+        val uris = mutableListOf<Uri>()
+        if (data.clipData != null) {
+            val clipData = data.clipData!!
+            for (i in 0 until clipData.itemCount) {
+                uris.add(clipData.getItemAt(i).uri)
             }
-            mediaItems.add(item)
-            Toast.makeText(this, "تم إضافة المستند بنجاح", Toast.LENGTH_SHORT).show()
-            renderRoyalUI()
-        } catch (e: Exception) {
-            Toast.makeText(this, "فشل قراءة المستند", Toast.LENGTH_SHORT).show()
+        } else if (data.data != null) {
+            uris.add(data.data!!)
         }
+        handleMediaSelection(uris)
+    }
+
+    private fun handleMediaSelection(uris: List<Uri>) {
+        var addedCount = 0
+        for (uri in uris) {
+            try {
+                val mime = contentResolver.getType(uri) ?: "application/octet-stream"
+                val name = getFileName(uri)
+                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: continue
+                
+                if (bytes.size > 20 * 1024 * 1024) { // 20MB limit per file
+                    Toast.makeText(this, "الملف $name يتجاوز 20MB", Toast.LENGTH_SHORT).show()
+                    continue
+                }
+                
+                val b64 = Base64.getEncoder().encodeToString(bytes)
+                val kind = if (mime.startsWith("image/")) "image" else "file"
+                
+                val item = JSONObject().apply {
+                    put("kind", kind)
+                    put("data", "data:$mime;base64,$b64")
+                    put("name", name)
+                }
+                mediaItems.add(item)
+                addedCount++
+            } catch (e: OutOfMemoryError) {
+                Toast.makeText(this, "الملف كبير جداً، تم تخطيه", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+        if (addedCount > 0) {
+            Toast.makeText(this, "تم إضافة $addedCount عنصر بنجاح", Toast.LENGTH_SHORT).show()
+        }
+        renderRoyalUI()
+    }
+
+    private fun getFileName(uri: Uri): String {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) result = cursor.getString(index)
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/') ?: -1
+            if (cut != -1) result = result?.substring(cut + 1)
+        }
+        return result ?: "file_${System.currentTimeMillis()}"
     }
 
     private fun handleSaveHtml(uri: Uri) {
@@ -347,11 +509,30 @@ class MainActivity : Activity() {
             contentResolver.openOutputStream(uri)?.use { out ->
                 out.write(pendingSaveHtml.toByteArray(Charsets.UTF_8))
             }
-            Toast.makeText(this, "👑 تم ختم وحفظ الخزنة الملكية", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "👑 تم ختم وحفظ الخزنة بنجاح", Toast.LENGTH_LONG).show()
             currentScreen = "home"
             renderRoyalUI()
         } catch (e: Exception) {
             Toast.makeText(this, "فشل الحفظ: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun handleNativeFileSave(uri: Uri?) {
+        if (uri == null) return
+        val data = pendingSaveFileData
+        if (data == null) {
+            Toast.makeText(this, "لا توجد بيانات للحفظ", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val bytes = Base64.getDecoder().decode(data)
+            contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+            Toast.makeText(this, "✔ تم حفظ الملف بنجاح", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "فشل حفظ الملف: ${e.message}", Toast.LENGTH_SHORT).show()
+        } finally {
+            pendingSaveFileData = null
+            pendingSaveFileMime = null
         }
     }
 
@@ -382,7 +563,9 @@ class MainActivity : Activity() {
                         val decryptedJson = decryptVault(salt, iv, cipher, hmac, vaultId, iterations, pass)
                         runOnUiThread {
                             if (decryptedJson != null) {
-                                showDecryptedContent(decryptedJson)
+                                decryptedPayloadJson = decryptedJson
+                                currentScreen = "view"
+                                renderRoyalUI()
                             } else {
                                 Toast.makeText(this, "المفتاح خاطئ أو الملف تالف", Toast.LENGTH_LONG).show()
                             }
@@ -415,6 +598,7 @@ class MainActivity : Activity() {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             setTextColor(TEXT_WHITE)
             setHintTextColor(Color.GRAY)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
         }
         val dialog = AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
             .setTitle("👑 فتح الخزنة الملكية")
@@ -430,30 +614,8 @@ class MainActivity : Activity() {
         dialog.show()
     }
 
-    private fun showDecryptedContent(jsonStr: String) {
-        val json = JSONObject(jsonStr)
-        val msg = json.optString("message", "")
-        
-        val builder = StringBuilder()
-        if (msg.isNotEmpty()) builder.append(msg).append("\n\n")
-        
-        val media = json.optJSONArray("media")
-        if (media != null) {
-            for (i in 0 until media.length()) {
-                val item = media.getJSONObject(i)
-                builder.append("📎 مستند: ").append(item.optString("name", "ملف")).append("\n")
-            }
-        }
-        
-        AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
-            .setTitle("💎 محتوى الخزنة")
-            .setMessage(if (builder.isEmpty()) "لا يوجد محتوى" else builder.toString())
-            .setPositiveButton("حسناً", null)
-            .show()
-    }
-
     // ---------------------------------------------------------
-    // NATIVE CRYPTO ENGINE (Unchanged - Working)
+    // NATIVE CRYPTO ENGINE
     // ---------------------------------------------------------
     private fun generateVaultHtml(message: String, password: String, media: List<JSONObject>): String {
         val vaultId = UUID.randomUUID().toString().replace("-", "").substring(0, 8)
@@ -529,7 +691,7 @@ class MainActivity : Activity() {
     }
 
     // ---------------------------------------------------------
-    // ROYAL HTML TEMPLATE (Matches the App's Theme)
+    // ROYAL HTML TEMPLATE (With Blob Downloader Fix)
     // ---------------------------------------------------------
     private fun getRoyalHtmlTemplate(salt: String, iv: String, cipher: String, hmac: String, vaultId: String, iterations: Int): String {
         return """<!DOCTYPE html>
@@ -544,7 +706,7 @@ class MainActivity : Activity() {
   h1 { color: #D4AF37; text-align: center; margin-top: 0; font-size: 28px; letter-spacing: 2px; }
   input { width: 100%; padding: 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #333A45; background: #151A20; color: #fff; box-sizing: border-box; outline: none; font-family: sans-serif; }
   input:focus { border-color: #D4AF37; }
-  button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: sans-serif; }
+  button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: sans-serif; margin-bottom: 10px; }
   button:hover { opacity: 0.9; }
   .content { display: none; margin-top: 20px; text-align: left; white-space: pre-wrap; line-height: 1.6; font-family: sans-serif; }
   .media { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #333A45; }
@@ -582,6 +744,28 @@ async function deriveKey(password, saltBytes, usage) {
 
 async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
 
+function downloadBase64File(dataUrl, filename) {
+    try {
+        var arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        var blob = new Blob([u8arr], {type:mime});
+        var url = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch(e) {
+        alert("فشل التحميل: " + e.message);
+    }
+}
+
 async function unlock() {
   const pass = document.getElementById('pass').value;
   if(!pass) return;
@@ -616,15 +800,16 @@ async function unlock() {
           img.src = item.data;
           img.className = 'media';
           document.getElementById('resultBox').appendChild(img);
+          
+          const btn = document.createElement('button');
+          btn.textContent = 'حفظ الصورة';
+          btn.onclick = () => downloadBase64File(item.data, item.name);
+          document.getElementById('resultBox').appendChild(btn);
         } else {
-          const a = document.createElement('a');
-          a.href = item.data;
-          a.download = item.name;
-          a.textContent = 'تحميل ' + item.name;
-          a.style.display = 'block';
-          a.style.marginTop = '10px';
-          a.style.color = '#D4AF37';
-          document.getElementById('resultBox').appendChild(a);
+          const btn = document.createElement('button');
+          btn.textContent = 'تحميل ' + item.name;
+          btn.onclick = () => downloadBase64File(item.data, item.name);
+          document.getElementById('resultBox').appendChild(btn);
         }
       });
     }

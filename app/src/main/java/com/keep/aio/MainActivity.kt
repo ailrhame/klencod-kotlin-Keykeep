@@ -201,7 +201,7 @@ class MainActivity : Activity() {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) // Batch selection
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
                 }
                 startActivityForResult(intent, 2001)
             }
@@ -209,14 +209,13 @@ class MainActivity : Activity() {
         }
         card.addView(btnAddMedia)
 
-        val mediaStatus = TextView(this).apply {
-            text = if (mediaItems.isEmpty()) "لا توجد مرفقات" else "تم إرفاق ${mediaItems.size} عنصر"
-            setTextColor(TEXT_MUTED)
-            textSize = 12f
-            setPadding(0, dp(8), 0, dp(16))
-            gravity = Gravity.CENTER
+        // Container to display selected files
+        val attachmentsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(10) }
         }
-        card.addView(mediaStatus)
+        card.addView(attachmentsContainer)
+        renderAttachmentsUI(attachmentsContainer)
 
         val btnGenerate = Button(this).apply {
             text = "🔒 ختم وتشفير الخزنة"
@@ -234,7 +233,6 @@ class MainActivity : Activity() {
                     return@setOnClickListener
                 }
 
-                // Prevent huge HTML files that might crash mobile browsers
                 val totalSize = mediaItems.sumOf { it.optString("data").length }
                 if (totalSize > 50 * 1024 * 1024) {
                     Toast.makeText(this@MainActivity, "حجم المرفقات كبير جداً (الحد الأقصى ~35MB)", Toast.LENGTH_LONG).show()
@@ -253,6 +251,7 @@ class MainActivity : Activity() {
                     Toast.makeText(this@MainActivity, "خطأ في التشفير: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(16) }
         }
         card.addView(btnGenerate)
 
@@ -266,6 +265,64 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(16) }
         }
         parent.addView(btnBack)
+    }
+
+    private fun renderAttachmentsUI(container: LinearLayout) {
+        container.removeAllViews()
+        if (mediaItems.isEmpty()) {
+            val emptyMsg = TextView(this).apply {
+                text = "لا توجد مرفقات"
+                setTextColor(TEXT_MUTED)
+                textSize = 12f
+                gravity = Gravity.CENTER
+            }
+            container.addView(emptyMsg)
+            return
+        }
+
+        for (i in mediaItems.indices) {
+            val item = mediaItems[i]
+            val name = item.optString("name", "ملف")
+            val kind = item.optString("kind")
+            
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = luxuryBg(Color.parseColor("#151A20"), 8, 1, Color.parseColor("#333A45"))
+                setPadding(dp(12), dp(8), dp(12), dp(8))
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.bottomMargin = dp(6) }
+            }
+            
+            val icon = TextView(this).apply {
+                text = if (kind == "image") "🖼" else "📎"
+                textSize = 18f
+                setPadding(0, 0, dp(10), 0)
+            }
+            
+            val tvName = TextView(this).apply {
+                text = name
+                setTextColor(TEXT_WHITE)
+                textSize = 13f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            
+            val btnRemove = TextView(this).apply {
+                text = "❌"
+                textSize = 16f
+                setPadding(dp(10), 0, 0, 0)
+                setOnClickListener {
+                    mediaItems.removeAt(i)
+                    renderRoyalUI() // Re-render to update the UI
+                }
+            }
+            
+            row.addView(icon)
+            row.addView(tvName)
+            row.addView(btnRemove)
+            container.addView(row)
+        }
     }
 
     private fun buildOpen(parent: LinearLayout) {
@@ -352,6 +409,7 @@ class MainActivity : Activity() {
                             setTextColor(TEXT_WHITE)
                             textSize = 14f
                             setPadding(0, dp(8), 0, dp(8))
+                            gravity = Gravity.CENTER
                         }
                         card.addView(icon)
                     }
@@ -456,7 +514,7 @@ class MainActivity : Activity() {
                 val name = getFileName(uri)
                 val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: continue
                 
-                if (bytes.size > 20 * 1024 * 1024) { // 20MB limit per file
+                if (bytes.size > 20 * 1024 * 1024) {
                     Toast.makeText(this, "الملف $name يتجاوز 20MB", Toast.LENGTH_SHORT).show()
                     continue
                 }
@@ -473,14 +531,12 @@ class MainActivity : Activity() {
                 addedCount++
             } catch (e: OutOfMemoryError) {
                 Toast.makeText(this, "الملف كبير جداً، تم تخطيه", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                // Ignore
-            }
+            } catch (e: Exception) {}
         }
         if (addedCount > 0) {
             Toast.makeText(this, "تم إضافة $addedCount عنصر بنجاح", Toast.LENGTH_SHORT).show()
         }
-        renderRoyalUI()
+        renderRoyalUI() // Refresh UI to show new files
     }
 
     private fun getFileName(uri: Uri): String {
@@ -691,7 +747,7 @@ class MainActivity : Activity() {
     }
 
     // ---------------------------------------------------------
-    // ROYAL HTML TEMPLATE (With Blob Downloader Fix)
+    // ROYAL HTML TEMPLATE (Secure File Cards)
     // ---------------------------------------------------------
     private fun getRoyalHtmlTemplate(salt: String, iv: String, cipher: String, hmac: String, vaultId: String, iterations: Int): String {
         return """<!DOCTYPE html>
@@ -706,11 +762,17 @@ class MainActivity : Activity() {
   h1 { color: #D4AF37; text-align: center; margin-top: 0; font-size: 28px; letter-spacing: 2px; }
   input { width: 100%; padding: 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #333A45; background: #151A20; color: #fff; box-sizing: border-box; outline: none; font-family: sans-serif; }
   input:focus { border-color: #D4AF37; }
-  button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: sans-serif; margin-bottom: 10px; }
-  button:hover { opacity: 0.9; }
+  button.main-btn { width: 100%; padding: 14px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: sans-serif; margin-bottom: 10px; }
+  button.main-btn:hover { opacity: 0.9; }
   .content { display: none; margin-top: 20px; text-align: left; white-space: pre-wrap; line-height: 1.6; font-family: sans-serif; }
   .media { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #333A45; }
   .err { color: #ff7a7a; font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; font-family: sans-serif; }
+  
+  /* Secure File Card Design */
+  .file-card { background: #151A20; border: 1px solid #333A45; border-radius: 12px; padding: 16px; margin-top: 16px; text-align: center; }
+  .file-icon { font-size: 36px; margin-bottom: 8px; }
+  .file-name { color: #FFFFFF; font-size: 14px; word-break: break-all; margin-bottom: 12px; font-family: sans-serif; }
+  .file-btn { width: 100%; padding: 10px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; font-family: sans-serif; }
 </style>
 </head>
 <body>
@@ -718,7 +780,7 @@ class MainActivity : Activity() {
   <h1>👑 ROYAL VAULT</h1>
   <div id="loginBox">
     <input type="password" id="pass" placeholder="أدخل مفتاح الخزنة" autocomplete="off">
-    <button onclick="unlock()">فتح الخزنة</button>
+    <button class="main-btn" onclick="unlock()">فتح الخزنة</button>
     <div class="err" id="err"></div>
   </div>
   <div class="content" id="resultBox"></div>
@@ -802,14 +864,32 @@ async function unlock() {
           document.getElementById('resultBox').appendChild(img);
           
           const btn = document.createElement('button');
+          btn.className = 'main-btn';
           btn.textContent = 'حفظ الصورة';
           btn.onclick = () => downloadBase64File(item.data, item.name);
           document.getElementById('resultBox').appendChild(btn);
         } else {
+          // Secure File Card instead of raw link
+          const card = document.createElement('div');
+          card.className = 'file-card';
+          
+          const icon = document.createElement('div');
+          icon.className = 'file-icon';
+          icon.textContent = '📄';
+          
+          const name = document.createElement('div');
+          name.className = 'file-name';
+          name.textContent = item.name;
+          
           const btn = document.createElement('button');
-          btn.textContent = 'تحميل ' + item.name;
+          btn.className = 'file-btn';
+          btn.textContent = '⬇ تحميل الملف';
           btn.onclick = () => downloadBase64File(item.data, item.name);
-          document.getElementById('resultBox').appendChild(btn);
+          
+          card.appendChild(icon);
+          card.appendChild(name);
+          card.appendChild(btn);
+          document.getElementById('resultBox').appendChild(card);
         }
       });
     }

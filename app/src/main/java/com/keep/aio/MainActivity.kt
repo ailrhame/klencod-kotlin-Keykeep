@@ -324,23 +324,18 @@ class MainActivity : Activity() {
     private var selectedVaultType = "note"
     private val customFields = mutableMapOf<String, String>()
     
-    // Draft states
+    // Draft states to survive UI rebuilds
     private var draftMessage = ""
     private var draftPass = ""
     private var draftPassConfirm = ""
 
     private var currentSearchQuery = ""
-    private lateinit var rootContainer: FrameLayout
     private var lastPausedTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         VaultStore.init(this)
         applyScreenSecurity()
-        
-        rootContainer = FrameLayout(this)
-        setContentView(rootContainer)
-        
         showSplashScreen()
     }
 
@@ -396,7 +391,7 @@ class MainActivity : Activity() {
     }
 
     // ---------------------------------------------------------
-    // SPLASH SCREEN
+    // SPLASH SCREEN (Using setContentView directly)
     // ---------------------------------------------------------
     private fun showSplashScreen() {
         val root = FrameLayout(this).apply { setBackgroundColor(AppConfig.BG_OBSIDIAN) }
@@ -420,7 +415,7 @@ class MainActivity : Activity() {
         center.addView(crown)
         center.addView(title)
         root.addView(center)
-        setContentView(root)
+        setContentView(root) // Set the splash screen as the main view
 
         val anim = ScaleAnimation(0.5f, 1f, 0.5f, 1f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
         anim.duration = 1000
@@ -435,12 +430,12 @@ class MainActivity : Activity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             currentScreen = "home"
-            renderUI()
+            renderUI() // Now renderUI will replace the splash screen
         }, 2000)
     }
 
     // ---------------------------------------------------------
-    // MAIN RENDERER
+    // MAIN RENDERER (Replaces entire content view)
     // ---------------------------------------------------------
     private fun renderUI() {
         applyScreenSecurity()
@@ -480,8 +475,7 @@ class MainActivity : Activity() {
             "view" -> buildView(container)
         }
 
-        rootContainer.removeAllViews()
-        rootContainer.addView(root)
+        setContentView(root) // Replace the current view with the new layout
     }
 
     // ---------------------------------------------------------
@@ -523,7 +517,15 @@ class MainActivity : Activity() {
             setTextColor(Color.BLACK); textSize = 16f; typeface = Typeface.SERIF
             applyGoldGradient(this)
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56)).also { it.bottomMargin = dp(16) }
-            setOnClickListener { mediaItems.clear(); draftMessage = ""; draftPass = ""; draftPassConfirm = ""; customFields.clear(); currentScreen = "create"; renderUI() }
+            setOnClickListener { 
+                mediaItems.clear()
+                draftMessage = ""
+                draftPass = ""
+                draftPassConfirm = ""
+                customFields.clear()
+                currentScreen = "create"
+                renderUI() 
+            }
         }
         parent.addView(btnCreate)
 
@@ -561,7 +563,7 @@ class MainActivity : Activity() {
                     val newType = when(p2) { 0 -> "note"; 1 -> "account"; else -> "document" }
                     if (selectedVaultType != newType) {
                         selectedVaultType = newType
-                        rootContainer.post { renderUI() }
+                        parent.post { renderUI() } // Post to main thread to avoid layout loop
                     }
                 }
                 override fun onNothingSelected(p0: AdapterView<*>?) {}
@@ -844,7 +846,6 @@ class MainActivity : Activity() {
                         val mime = if (data.startsWith("data:")) data.substringAfter("data:").substringBefore(";") else "*/*"
                         pendingSaveFileData = if (data.contains(",")) data.substringAfter(",") else data
                         
-                        // No 'type' val shadowing here anymore
                         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE); type = mime
                             putExtra(Intent.EXTRA_TITLE, name)

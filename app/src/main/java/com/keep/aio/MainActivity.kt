@@ -1,6 +1,5 @@
 package com.keep.aio
 
-import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.ClipData
@@ -8,7 +7,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
@@ -23,7 +21,6 @@ import android.os.Looper
 import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.InputType
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
@@ -31,7 +28,6 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.view.animation.ScaleAnimation
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -43,13 +39,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
-import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
-import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -71,7 +63,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 // ============================================================
-// APP STATE & CONFIG
+// APP CONFIG
 // ============================================================
 object AppConfig {
     val BG_OBSIDIAN = Color.parseColor("#0B0C10")
@@ -85,20 +77,20 @@ object AppConfig {
 }
 
 // ============================================================
-// CRYPTO ENGINE (V2 Protocol)
+// CRYPTO ENGINE
 // ============================================================
 object CryptoEngine {
     private const val ITERATIONS = 310000
     private const val VERSION = "v2.0"
 
-    fun generateVault(message: String, password: String, media: List<JSONObject>, type: String, fields: Map<String, String>): String {
+    fun generateVault(message: String, password: String, media: List<JSONObject>, vaultType: String, fields: Map<String, String>): String {
         val vaultId = UUID.randomUUID().toString().replace("-", "").substring(0, 8)
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         val iv = ByteArray(12).also { SecureRandom().nextBytes(it) }
 
         val json = JSONObject().apply {
             put("version", VERSION)
-            put("type", type)
+            put("type", vaultType)
             put("message", message)
             put("fields", JSONObject(fields as Map<*, *>))
             if (media.isNotEmpty()) {
@@ -330,12 +322,14 @@ class MainActivity : Activity() {
     private var pendingSaveFileData: String? = null
     
     private var selectedVaultType = "note"
-    private var customFields = mutableMapOf<String, String>()
+    private val customFields = mutableMapOf<String, String>()
+    
+    // Draft states
+    private var draftMessage = ""
+    private var draftPass = ""
+    private var draftPassConfirm = ""
 
     private var currentSearchQuery = ""
-    private var currentSortMode = "name_asc"
-    private var isSortAscending = true
-
     private lateinit var rootContainer: FrameLayout
     private var lastPausedTime = 0L
 
@@ -451,8 +445,6 @@ class MainActivity : Activity() {
     private fun renderUI() {
         applyScreenSecurity()
         val root = FrameLayout(this).apply { setBackgroundColor(AppConfig.BG_OBSIDIAN) }
-        
-        // Royal Background Pattern
         root.addView(RoyalBackgroundView(this))
 
         val scrollView = ScrollView(this).apply {
@@ -531,7 +523,7 @@ class MainActivity : Activity() {
             setTextColor(Color.BLACK); textSize = 16f; typeface = Typeface.SERIF
             applyGoldGradient(this)
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(56)).also { it.bottomMargin = dp(16) }
-            setOnClickListener { mediaItems.clear(); currentScreen = "create"; renderUI() }
+            setOnClickListener { mediaItems.clear(); draftMessage = ""; draftPass = ""; draftPassConfirm = ""; customFields.clear(); currentScreen = "create"; renderUI() }
         }
         parent.addView(btnCreate)
 
@@ -566,8 +558,11 @@ class MainActivity : Activity() {
             background = luxuryBg(AppConfig.CARD_DARK, 8, 1, Color.parseColor("#333A45"))
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                    selectedVaultType = when(p2) { 0 -> "note"; 1 -> "account"; else -> "document" }
-                    renderUI() // Re-render to show/hide fields
+                    val newType = when(p2) { 0 -> "note"; 1 -> "account"; else -> "document" }
+                    if (selectedVaultType != newType) {
+                        selectedVaultType = newType
+                        rootContainer.post { renderUI() }
+                    }
                 }
                 override fun onNothingSelected(p0: AdapterView<*>?) {}
             }
@@ -590,6 +585,12 @@ class MainActivity : Activity() {
         } else {
             parent.addView(createLabel(if (selectedVaultType == "note") "الرسالة السرية" else "الوصف"))
             val msgInput = createLuxuryInput("اكتب هنا...", true)
+            msgInput.setText(draftMessage)
+            msgInput.addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) { draftMessage = s.toString() }
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
             parent.addView(msgInput)
         }
 
@@ -598,6 +599,12 @@ class MainActivity : Activity() {
         val passRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         val passInput = createLuxuryInput("كلمة مرور قوية", false)
         passInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        passInput.setText(draftPass)
+        passInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { draftPass = s.toString() }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
         passInput.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         passRow.addView(passInput)
         passRow.addView(TextView(this).apply {
@@ -645,6 +652,12 @@ class MainActivity : Activity() {
         parent.addView(createLabel("تأكيد المفتاح"))
         val passConfirmInput = createLuxuryInput("أعد كتابة كلمة المرور", false)
         passConfirmInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        passConfirmInput.setText(draftPassConfirm)
+        passConfirmInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { draftPassConfirm = s.toString() }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
         parent.addView(passConfirmInput)
 
         // Attachments
@@ -692,7 +705,7 @@ class MainActivity : Activity() {
                     return@setOnClickListener
                 }
                 try {
-                    val msg = if (selectedVaultType != "account") (parent.getChildAt(2) as? EditText)?.text.toString() else ""
+                    val msg = if (selectedVaultType != "account") draftMessage else ""
                     pendingSaveHtml = CryptoEngine.generateVault(msg, pass, mediaItems, selectedVaultType, customFields)
                     
                     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -752,7 +765,6 @@ class MainActivity : Activity() {
 
         val json = JSONObject(jsonStr)
         val msg = json.optString("message", "")
-        val type = json.optString("type", "note")
         val fields = json.optJSONObject("fields")
 
         if (fields != null && fields.length() > 0) {
@@ -831,6 +843,8 @@ class MainActivity : Activity() {
                     setOnClickListener {
                         val mime = if (data.startsWith("data:")) data.substringAfter("data:").substringBefore(";") else "*/*"
                         pendingSaveFileData = if (data.contains(",")) data.substringAfter(",") else data
+                        
+                        // No 'type' val shadowing here anymore
                         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE); type = mime
                             putExtra(Intent.EXTRA_TITLE, name)
@@ -961,7 +975,13 @@ class MainActivity : Activity() {
                     contentResolver.openOutputStream(uri)?.use { out -> out.write(pendingSaveHtml.toByteArray(Charsets.UTF_8)) }
                     VaultStore.addVaultStats(mediaItems.size, mediaItems.sumOf { it.optLong("size", 0) })
                     Toast.makeText(this, "👑 تم تشفير وحفظ الخزنة", Toast.LENGTH_LONG).show()
-                    currentScreen = "home"; mediaItems.clear(); customFields.clear(); renderUI()
+                    currentScreen = "home"
+                    mediaItems.clear()
+                    draftMessage = ""
+                    draftPass = ""
+                    draftPassConfirm = ""
+                    customFields.clear()
+                    renderUI()
                 } catch (e: Exception) { Toast.makeText(this, "فشل الحفظ", Toast.LENGTH_SHORT).show() }
             }
             1002 -> data?.data?.let { uri ->
@@ -1030,7 +1050,7 @@ class MainActivity : Activity() {
 }
 
 // ============================================================
-// CUSTOM VIEW: ROYAL BACKGROUND (Ornaments + Gold Lines)
+// CUSTOM VIEW: ROYAL BACKGROUND
 // ============================================================
 class RoyalBackgroundView(context: Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -1044,7 +1064,6 @@ class RoyalBackgroundView(context: Context) : View(context) {
         val w = width.toFloat()
         val h = height.toFloat()
         
-        // Corner ornaments
         val path = Path()
         // Top Left
         path.moveTo(40f, 80f); path.lineTo(40f, 40f); path.lineTo(80f, 40f)
@@ -1057,7 +1076,6 @@ class RoyalBackgroundView(context: Context) : View(context) {
         
         canvas.drawPath(path, paint)
         
-        // Subtle crown glow in the center top
         val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             shader = android.graphics.RadialGradient(w / 2f, 100f, 200f,

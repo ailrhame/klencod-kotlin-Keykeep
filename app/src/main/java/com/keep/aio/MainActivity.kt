@@ -12,8 +12,10 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -41,65 +43,97 @@ class MainActivity : Activity() {
     private var pendingSaveHtml = ""
     private val mediaItems = mutableListOf<JSONObject>()
 
-    private val BG = Color.parseColor("#0a0a0d")
-    private val CARD_BG = Color.parseColor("#16171b")
-    private val ACCENT = Color.parseColor("#a855f7")
-    private val TEXT_MAIN = Color.parseColor("#e8e9ee")
-    private val TEXT_MUTED = Color.parseColor("#8a8f9c")
-    private val BORDER = Color.parseColor("#3a3f4a")
+    // ROYAL PALETTE
+    private val BG_OBSIDIAN = Color.parseColor("#0B0C10")
+    private val CARD_DARK = Color.parseColor("#1F2833")
+    private val GOLD_PRIMARY = Color.parseColor("#D4AF37")
+    private val GOLD_LIGHT = Color.parseColor("#F3E5AB")
+    private val TEXT_WHITE = Color.parseColor("#FFFFFF")
+    private val TEXT_MUTED = Color.parseColor("#8A8F9C")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        renderUI()
+        renderRoyalUI()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
-    private fun roundedBg(color: Int, radius: Int, stroke: Int = 0, strokeColor: Int = Color.TRANSPARENT): GradientDrawable {
+    // Luxury Card Background (Dark with Gold Border)
+    private fun luxuryBg(color: Int, radius: Int, strokeWidth: Int = 1, strokeColor: Int = GOLD_PRIMARY): GradientDrawable {
         return GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
-            if (stroke > 0) setStroke(dp(stroke), strokeColor)
+            if (strokeWidth > 0) setStroke(dp(strokeWidth), strokeColor)
         }
     }
 
-    private fun renderUI() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(BG)
-            setPadding(dp(20), dp(40), dp(20), dp(20))
-            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    // Luxury Button (Gold Gradient)
+    private fun applyGoldGradient(view: View) {
+        val gradient = GradientDrawable(
+            GradientDrawable.Orientation.LEFT_RIGHT,
+            intArrayOf(GOLD_LIGHT, GOLD_PRIMARY, Color.parseColor("#B8860B"))
+        ).apply {
+            cornerRadius = dp(12).toFloat()
+        }
+        view.background = gradient
+    }
+
+    private fun renderRoyalUI() {
+        // Main Container with a deep dark background
+        val root = FrameLayout(this).apply {
+            setBackgroundColor(BG_OBSIDIAN)
         }
 
-        val header = TextView(this).apply {
-            text = "🔒 Keykeep"
-            textSize = 28f
-            setTextColor(ACCENT)
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        val scrollView = ScrollView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        }
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), dp(60), dp(24), dp(24))
+        }
+        scrollView.addView(container)
+        root.addView(scrollView)
+
+        // Header
+        val title = TextView(this).apply {
+            text = "KEYKEEP"
+            textSize = 32f
+            setTextColor(GOLD_PRIMARY)
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            letterSpacing = 0.2f
+            gravity = Gravity.CENTER
+        }
+        
+        val crown = TextView(this).apply {
+            text = "👑"
+            textSize = 36f
             gravity = Gravity.CENTER
             setPadding(0, 0, 0, dp(8))
         }
-        root.addView(header)
-        
-        val subHeader = TextView(this).apply {
-            text = "Vault Creator & Opener"
-            textSize = 14f
-            setTextColor(TEXT_MUTED)
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(32))
-        }
-        root.addView(subHeader)
 
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        val subtitle = TextView(this).apply {
+            text = "ROYAL VAULT"
+            textSize = 12f
+            setTextColor(TEXT_MUTED)
+            letterSpacing = 0.3f
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, dp(40))
         }
-        root.addView(content)
+
+        container.addView(crown)
+        container.addView(title)
+        container.addView(subtitle)
+
+        val contentArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        container.addView(contentArea)
 
         when (currentScreen) {
-            "home" -> buildHome(content)
-            "create" -> buildCreate(content)
-            "open" -> buildOpen(content)
+            "home" -> buildHome(contentArea)
+            "create" -> buildCreate(contentArea)
+            "open" -> buildOpen(contentArea)
         }
 
         setContentView(root)
@@ -107,61 +141,58 @@ class MainActivity : Activity() {
 
     private fun buildHome(parent: LinearLayout) {
         val btnCreate = Button(this).apply {
-            text = "➕ إنشاء خزنة جديدة"
-            setTextColor(Color.WHITE)
+            text = "إنشاء خزنة ملكية"
+            setTextColor(Color.BLACK)
             textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedBg(ACCENT, 12)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            applyGoldGradient(this)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
             setOnClickListener { 
-                mediaItems.clear() // Clear previous media items
+                mediaItems.clear()
                 currentScreen = "create"
-                renderUI() 
+                renderRoyalUI() 
             }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.bottomMargin = dp(16) }
         }
         parent.addView(btnCreate)
 
-        val spacer = View(this).apply { layoutParams = LinearLayout.LayoutParams(1, dp(16)) }
-        parent.addView(spacer)
-
         val btnOpen = Button(this).apply {
-            text = "🔓 فتح خزنة موجودة"
-            setTextColor(TEXT_MAIN)
+            text = "فتح خزنة"
+            setTextColor(GOLD_PRIMARY)
             textSize = 16f
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedBg(CARD_BG, 12, 1, BORDER)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            setOnClickListener { currentScreen = "open"; renderUI() }
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            background = luxuryBg(Color.TRANSPARENT, 12, 1, GOLD_PRIMARY)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            setOnClickListener { currentScreen = "open"; renderRoyalUI() }
         }
         parent.addView(btnOpen)
     }
 
     private fun buildCreate(parent: LinearLayout) {
-        val scroll = ScrollView(this)
-        val layout = LinearLayout(this).apply {
+        val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            background = luxuryBg(CARD_DARK, 16, 1, Color.parseColor("#333A45"))
+            setPadding(dp(20), dp(20), dp(20), dp(20))
         }
-        scroll.addView(layout)
-        parent.addView(scroll)
 
-        layout.addView(createLabel("الرسالة السرية"))
-        val msgInput = createInput("اكتب رسالتك هنا...", true)
-        layout.addView(msgInput)
+        card.addView(createLuxuryLabel("الرسالة السرية"))
+        val msgInput = createLuxuryInput("اكتب رسالتك هنا...", true)
+        card.addView(msgInput)
 
-        layout.addView(createLabel("كلمة المرور"))
-        val passInput = createInput("كلمة مرور قوية", false)
+        card.addView(createLuxuryLabel("مفتاح التشفير (كلمة المرور)"))
+        val passInput = createLuxuryInput("كلمة مرور قوية", false)
         passInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        layout.addView(passInput)
+        card.addView(passInput)
 
-        layout.addView(createLabel("تأكيد كلمة المرور"))
-        val passConfirmInput = createInput("أعد كتابة كلمة المرور", false)
+        card.addView(createLuxuryLabel("تأكيد المفتاح"))
+        val passConfirmInput = createLuxuryInput("أعد كتابة كلمة المرور", false)
         passConfirmInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        layout.addView(passConfirmInput)
+        card.addView(passConfirmInput)
 
         val btnAddMedia = Button(this).apply {
-            text = "📎 إضافة ملف/صورة"
-            setTextColor(TEXT_MAIN)
-            background = roundedBg(CARD_BG, 8, 1, BORDER)
+            text = "➕ إرفاق مستند"
+            setTextColor(GOLD_PRIMARY)
+            background = luxuryBg(Color.TRANSPARENT, 8, 1, GOLD_PRIMARY)
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
@@ -169,30 +200,32 @@ class MainActivity : Activity() {
                 }
                 startActivityForResult(intent, 2001)
             }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(10) }
         }
-        layout.addView(btnAddMedia)
+        card.addView(btnAddMedia)
 
         val mediaStatus = TextView(this).apply {
             text = if (mediaItems.isEmpty()) "لا توجد مرفقات" else "تم إضافة ${mediaItems.size} مرفق"
             setTextColor(TEXT_MUTED)
             textSize = 12f
-            setPadding(0, dp(4), 0, dp(16))
+            setPadding(0, dp(8), 0, dp(16))
+            gravity = Gravity.CENTER
         }
-        layout.addView(mediaStatus)
+        card.addView(mediaStatus)
 
         val btnGenerate = Button(this).apply {
-            text = "🔐 تشفير وحفظ الملف"
-            setTextColor(Color.WHITE)
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedBg(ACCENT, 12)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            text = "🔒 ختم وتشفير الخزنة"
+            setTextColor(Color.BLACK)
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            applyGoldGradient(this)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
             setOnClickListener {
                 val msg = msgInput.text.toString()
                 val pass = passInput.text.toString()
                 val confirm = passConfirmInput.text.toString()
 
                 if (pass.isEmpty() || pass != confirm) {
-                    Toast.makeText(this@MainActivity, "كلمات المرور غير متطابقة", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "المفاتيح غير متطابقة", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 
@@ -201,7 +234,7 @@ class MainActivity : Activity() {
                     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
                         type = "text/html"
-                        putExtra(Intent.EXTRA_TITLE, "vault_${UUID.randomUUID().toString().take(6)}.html")
+                        putExtra(Intent.EXTRA_TITLE, "RoyalVault_${UUID.randomUUID().toString().take(4)}.html")
                     }
                     startActivityForResult(intent, 1001)
                 } catch (e: Exception) {
@@ -209,28 +242,31 @@ class MainActivity : Activity() {
                 }
             }
         }
-        layout.addView(btnGenerate)
+        card.addView(btnGenerate)
+
+        parent.addView(card)
 
         val btnBack = Button(this).apply {
             text = "رجوع"
             setTextColor(TEXT_MUTED)
             background = null
-            setOnClickListener { currentScreen = "home"; renderUI() }
+            setOnClickListener { currentScreen = "home"; renderRoyalUI() }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).also { it.topMargin = dp(16) }
         }
-        layout.addView(btnBack)
+        parent.addView(btnBack)
     }
 
     private fun buildOpen(parent: LinearLayout) {
         val btnPick = Button(this).apply {
-            text = "📂 اختر ملف الخزنة (.html)"
-            setTextColor(Color.WHITE)
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedBg(ACCENT, 12)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            text = "📂 استيراد ملف الخزنة"
+            setTextColor(Color.BLACK)
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            applyGoldGradient(this)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*" // Allow any file to be selected, we will parse text
+                    type = "*/*"
                 }
                 startActivityForResult(intent, 1002)
             }
@@ -241,28 +277,29 @@ class MainActivity : Activity() {
             text = "رجوع"
             setTextColor(TEXT_MUTED)
             background = null
-            setOnClickListener { currentScreen = "home"; renderUI() }
+            setOnClickListener { currentScreen = "home"; renderRoyalUI() }
             setPadding(0, dp(20), 0, 0)
         }
         parent.addView(btnBack)
     }
 
-    private fun createLabel(text: String): TextView {
+    private fun createLuxuryLabel(text: String): TextView {
         return TextView(this).apply {
             this.text = text
-            setTextColor(TEXT_MUTED)
+            setTextColor(GOLD_PRIMARY)
             textSize = 13f
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             setPadding(0, dp(12), 0, dp(6))
         }
     }
 
-    private fun createInput(hint: String, multiLine: Boolean): EditText {
+    private fun createLuxuryInput(hint: String, multiLine: Boolean): EditText {
         return EditText(this).apply {
             this.hint = hint
-            setTextColor(TEXT_MAIN)
-            setHintTextColor(TEXT_MUTED)
-            background = roundedBg(CARD_BG, 8, 1, BORDER)
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setTextColor(TEXT_WHITE)
+            setHintTextColor(Color.parseColor("#555555"))
+            background = luxuryBg(Color.parseColor("#151A20"), 8, 1, Color.parseColor("#333A45"))
+            setPadding(dp(14), dp(14), dp(14), dp(14))
             if (multiLine) {
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 minLines = 3
@@ -298,10 +335,10 @@ class MainActivity : Activity() {
                 put("name", name)
             }
             mediaItems.add(item)
-            Toast.makeText(this, "تم إضافة المرفق", Toast.LENGTH_SHORT).show()
-            renderUI()
+            Toast.makeText(this, "تم إضافة المستند بنجاح", Toast.LENGTH_SHORT).show()
+            renderRoyalUI()
         } catch (e: Exception) {
-            Toast.makeText(this, "فشل قراءة الملف", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "فشل قراءة المستند", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -310,9 +347,9 @@ class MainActivity : Activity() {
             contentResolver.openOutputStream(uri)?.use { out ->
                 out.write(pendingSaveHtml.toByteArray(Charsets.UTF_8))
             }
-            Toast.makeText(this, "✔ تم حفظ الخزنة بنجاح", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "👑 تم ختم وحفظ الخزنة الملكية", Toast.LENGTH_LONG).show()
             currentScreen = "home"
-            renderUI()
+            renderRoyalUI()
         } catch (e: Exception) {
             Toast.makeText(this, "فشل الحفظ: ${e.message}", Toast.LENGTH_LONG).show()
         }
@@ -326,7 +363,6 @@ class MainActivity : Activity() {
                 return
             }
 
-            // Robust regex to handle both old HTML vars (SALT_B64) and new Kotlin vars (SALT)
             val salt = extractString(html, "SALT")
             val iv = extractString(html, "IV")
             val cipher = extractString(html, "CIPHER")
@@ -339,7 +375,7 @@ class MainActivity : Activity() {
                 return
             }
 
-            promptPassword { pass ->
+            promptRoyalPassword { pass ->
                 Toast.makeText(this, "جاري فك التشفير...", Toast.LENGTH_SHORT).show()
                 Thread {
                     try {
@@ -348,7 +384,7 @@ class MainActivity : Activity() {
                             if (decryptedJson != null) {
                                 showDecryptedContent(decryptedJson)
                             } else {
-                                Toast.makeText(this, "كلمة المرور خاطئة أو الملف تالف", Toast.LENGTH_LONG).show()
+                                Toast.makeText(this, "المفتاح خاطئ أو الملف تالف", Toast.LENGTH_LONG).show()
                             }
                         }
                     } catch (e: Exception) {
@@ -373,18 +409,25 @@ class MainActivity : Activity() {
         return regex.find(html)?.groupValues?.get(1)?.toIntOrNull()
     }
 
-    private fun promptPassword(onPass: (String) -> Unit) {
+    private fun promptRoyalPassword(onPass: (String) -> Unit) {
         val input = EditText(this).apply {
-            hint = "أدخل كلمة المرور"
+            hint = "أدخل مفتاح الخزنة"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setTextColor(Color.BLACK)
+            setTextColor(TEXT_WHITE)
+            setHintTextColor(Color.GRAY)
         }
-        AlertDialog.Builder(this)
-            .setTitle("🔒 فتح الخزنة")
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+            .setTitle("👑 فتح الخزنة الملكية")
             .setView(input)
             .setPositiveButton("فتح") { _, _ -> onPass(input.text.toString()) }
             .setNegativeButton("إلغاء", null)
-            .show()
+            .create()
+        
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(GOLD_PRIMARY)
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.GRAY)
+        }
+        dialog.show()
     }
 
     private fun showDecryptedContent(jsonStr: String) {
@@ -398,19 +441,19 @@ class MainActivity : Activity() {
         if (media != null) {
             for (i in 0 until media.length()) {
                 val item = media.getJSONObject(i)
-                builder.append("📎 مرفق: ").append(item.optString("name", "ملف")).append("\n")
+                builder.append("📎 مستند: ").append(item.optString("name", "ملف")).append("\n")
             }
         }
         
-        AlertDialog.Builder(this)
-            .setTitle("📄 محتوى الخزنة")
-            .setMessage(if (builder.isEmpty()) "لا يوجد محتوى نصي" else builder.toString())
+        AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+            .setTitle("💎 محتوى الخزنة")
+            .setMessage(if (builder.isEmpty()) "لا يوجد محتوى" else builder.toString())
             .setPositiveButton("حسناً", null)
             .show()
     }
 
     // ---------------------------------------------------------
-    // NATIVE CRYPTO ENGINE
+    // NATIVE CRYPTO ENGINE (Unchanged - Working)
     // ---------------------------------------------------------
     private fun generateVaultHtml(message: String, password: String, media: List<JSONObject>): String {
         val vaultId = UUID.randomUUID().toString().replace("-", "").substring(0, 8)
@@ -447,7 +490,7 @@ class MainActivity : Activity() {
         val cipherB64 = b64.encodeToString(ciphertext)
         val hmacB64 = b64.encodeToString(hmac)
 
-        return getHtmlTemplate(saltB64, ivB64, cipherB64, hmacB64, vaultId, iterations)
+        return getRoyalHtmlTemplate(saltB64, ivB64, cipherB64, hmacB64, vaultId, iterations)
     }
 
     private fun decryptVault(saltB64: String, ivB64: String, cipherB64: String, hmacB64: String, vaultId: String, iterations: Int, password: String): String? {
@@ -485,31 +528,34 @@ class MainActivity : Activity() {
         return bos.toByteArray()
     }
 
-    private fun getHtmlTemplate(salt: String, iv: String, cipher: String, hmac: String, vaultId: String, iterations: Int): String {
+    // ---------------------------------------------------------
+    // ROYAL HTML TEMPLATE (Matches the App's Theme)
+    // ---------------------------------------------------------
+    private fun getRoyalHtmlTemplate(salt: String, iv: String, cipher: String, hmac: String, vaultId: String, iterations: Int): String {
         return """<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Keykeep Vault</title>
+<title>Royal Vault</title>
 <style>
-  body { background: #0a0a0d; color: #e8e9ee; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
-  .box { background: #16171b; border: 1px solid #2a2d34; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  h1 { color: #a855f7; text-align: center; margin-top: 0; }
-  input { width: 100%; padding: 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #3a3f4a; background: #101114; color: #fff; box-sizing: border-box; outline: none; }
-  input:focus { border-color: #a855f7; }
-  button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #a855f7; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
-  button:hover { background: #7c3aed; }
-  .content { display: none; margin-top: 20px; text-align: left; white-space: pre-wrap; line-height: 1.6; }
-  .media { width: 100%; border-radius: 8px; margin-top: 10px; }
-  .err { color: #ff7a7a; font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; }
+  body { background: #0B0C10; color: #FFFFFF; font-family: 'Georgia', serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+  .box { background: #1F2833; border: 1px solid #D4AF37; border-radius: 16px; padding: 32px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(212,175,55,0.2); }
+  h1 { color: #D4AF37; text-align: center; margin-top: 0; font-size: 28px; letter-spacing: 2px; }
+  input { width: 100%; padding: 14px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #333A45; background: #151A20; color: #fff; box-sizing: border-box; outline: none; font-family: sans-serif; }
+  input:focus { border-color: #D4AF37; }
+  button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: linear-gradient(90deg, #F3E5AB, #D4AF37, #B8860B); color: #000; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: sans-serif; }
+  button:hover { opacity: 0.9; }
+  .content { display: none; margin-top: 20px; text-align: left; white-space: pre-wrap; line-height: 1.6; font-family: sans-serif; }
+  .media { width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #333A45; }
+  .err { color: #ff7a7a; font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; font-family: sans-serif; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>🔒 Keykeep</h1>
+  <h1>👑 ROYAL VAULT</h1>
   <div id="loginBox">
-    <input type="password" id="pass" placeholder="أدخل كلمة المرور" autocomplete="off">
+    <input type="password" id="pass" placeholder="أدخل مفتاح الخزنة" autocomplete="off">
     <button onclick="unlock()">فتح الخزنة</button>
     <div class="err" id="err"></div>
   </div>
@@ -577,13 +623,13 @@ async function unlock() {
           a.textContent = 'تحميل ' + item.name;
           a.style.display = 'block';
           a.style.marginTop = '10px';
-          a.style.color = '#a855f7';
+          a.style.color = '#D4AF37';
           document.getElementById('resultBox').appendChild(a);
         }
       });
     }
   } catch (e) {
-    document.getElementById('err').textContent = 'كلمة مرور خاطئة أو ملف تالف';
+    document.getElementById('err').textContent = 'مفتاح خاطئ أو ملف تالف';
   }
 }
 </script>

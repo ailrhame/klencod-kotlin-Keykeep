@@ -1,7 +1,13 @@
 package com.keep.aio
 
-import android.app.Activity
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ArgbEvaluator
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.app.AlertDialog
+import android.app.DatePickerDialog
+import android.app.Dialog
 import android.app.KeyguardManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -11,9 +17,20 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PixelFormat
+import android.graphics.RectF
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,37 +38,52 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
 import android.util.Base64
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -63,18 +95,12 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+import kotlin.math.ln
 
-// NOTE: minSdk must be >= 26 (PBKDF2WithHmacSHA256).
+// Requirements: minSdk 26, deps: androidx.activity:activity-ktx, androidx.core:core-ktx (see SETUP.md)
 
 private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
 private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
-
-private const val REQ_SAVE_VAULT = 1001
-private const val REQ_OPEN = 1002
-private const val REQ_ATTACH = 2001
-private const val REQ_SAVE_FILE = 3001
-private const val REQ_AUTH = 4001
-
 private const val MAX_FILE_BYTES = 10L * 1024 * 1024
 private const val MAX_TOTAL_BYTES = 20L * 1024 * 1024
 private const val MAX_OPEN_BYTES = 64L * 1024 * 1024
@@ -82,6 +108,12 @@ private const val CLIP_CLEAR_MS = 30_000L
 private const val MASK = "••••••••"
 
 private val rng = SecureRandom()
+
+/** Two-language helper: tr(arabic, english). Switching language in settings re-renders instantly. */
+private fun tr(ar: String, en: String): String = if (VaultStore.isArabic()) ar else en
+
+private fun hex(c: Int) = String.format("#%06X", 0xFFFFFF and c)
+private fun withAlpha(c: Int, a: Int) = (c and 0x00FFFFFF) or (a shl 24)
 
 private fun EditText.watch(cb: (String) -> Unit) {
     addTextChangedListener(object : TextWatcher {
@@ -92,78 +124,117 @@ private fun EditText.watch(cb: (String) -> Unit) {
 }
 
 // ============================================================
-// APP CONFIG
+// THEMES (9)
 // ============================================================
-data class FieldSpec(
-    val label: String,
-    val secret: Boolean = false,
-    val multiline: Boolean = false,
-    val numeric: Boolean = false
+class Palette(
+    val id: String, val nameAr: String, val nameEn: String,
+    val bg1: Int, val bg2: Int, val card: Int, val input: Int,
+    val acc: Int, val accLight: Int, val accDark: Int,
+    val text: Int, val muted: Int, val border: Int, val onAcc: Int,
+    val light: Boolean = false
 )
+
+private fun c(h: String) = Color.parseColor(h)
+
+val THEMES = listOf(
+    Palette("royal", "ملكي ذهبي", "Royal Gold", c("#0B0C10"), c("#151A20"), c("#1F2833"), c("#151A20"), c("#D4AF37"), c("#F3E5AB"), c("#B8860B"), c("#FFFFFF"), c("#8A8F9C"), c("#333A45"), c("#000000")),
+    Palette("ruby", "ياقوت أحمر", "Ruby", c("#100608"), c("#1A0B0F"), c("#2A1217"), c("#1A0B0F"), c("#E0314B"), c("#FF8FA0"), c("#9B1B30"), c("#FFFFFF"), c("#A38A8F"), c("#4A2229"), c("#FFFFFF")),
+    Palette("emerald", "زمرد", "Emerald", c("#06100C"), c("#0B1A14"), c("#12281F"), c("#0B1A14"), c("#3DDC97"), c("#A8F0CF"), c("#1E9E6A"), c("#FFFFFF"), c("#86A396"), c("#1F4033"), c("#00110A")),
+    Palette("sapphire", "سافير", "Sapphire", c("#070B16"), c("#0C1426"), c("#121D36"), c("#0C1426"), c("#6C8CFF"), c("#C3D0FF"), c("#3F5BD6"), c("#FFFFFF"), c("#8A93AD"), c("#26335A"), c("#050A1F")),
+    Palette("amethyst", "أميثيست", "Amethyst", c("#0D0814"), c("#150E22"), c("#211634"), c("#150E22"), c("#B57BFF"), c("#E0C8FF"), c("#7B3FD1"), c("#FFFFFF"), c("#9A8FB0"), c("#3B2A5C"), c("#12061F")),
+    Palette("charcoal", "فحم وفضة", "Charcoal", c("#0E0E0F"), c("#18181A"), c("#232326"), c("#18181A"), c("#C9CED6"), c("#F1F3F6"), c("#8E949E"), c("#FFFFFF"), c("#8B8B92"), c("#3A3A3F"), c("#000000")),
+    Palette("desert", "صحراء", "Desert", c("#14100B"), c("#1D1710"), c("#2C2217"), c("#1D1710"), c("#D9A066"), c("#F2D3A8"), c("#A8691F"), c("#FBF3E6"), c("#A59780"), c("#4A3B28"), c("#1A0F00")),
+    Palette("neon", "نيون سايبر", "Cyber Neon", c("#05060D"), c("#0A0B1A"), c("#11132B"), c("#0A0B1A"), c("#00E5FF"), c("#8BF3FF"), c("#FF2D95"), c("#FFFFFF"), c("#8E92C0"), c("#1E2250"), c("#00131A")),
+    Palette("ice", "ثلج (فاتح)", "Ice (Light)", c("#F4F8FC"), c("#E6EEF7"), c("#FFFFFF"), c("#F0F5FA"), c("#2F7DE1"), c("#7DB4F5"), c("#1B55A6"), c("#14202E"), c("#5C6B7C"), c("#C9D6E4"), c("#FFFFFF"), true)
+)
+
+data class FieldSpec(
+    val id: String, val ar: String, val en: String,
+    val secret: Boolean = false, val multiline: Boolean = false,
+    val numeric: Boolean = false, val totp: Boolean = false
+) { val label: String get() = tr(ar, en) }
 
 data class VaultSpec(
-    val type: String,
-    val title: String,
-    val fields: List<FieldSpec>,
-    val allowMedia: Boolean = false,
-    val dynamic: Boolean = false
-)
+    val type: String, val ar: String, val en: String, val fields: List<FieldSpec>,
+    val allowMedia: Boolean = false, val dynamic: Boolean = false
+) { val title: String get() = tr(ar, en) }
 
 object AppConfig {
-    val BG_OBSIDIAN = Color.parseColor("#0B0C10")
-    val CARD_DARK = Color.parseColor("#1F2833")
-    val GOLD_PRIMARY = Color.parseColor("#D4AF37")
-    val GOLD_LIGHT = Color.parseColor("#F3E5AB")
-    val GOLD_DARK = Color.parseColor("#B8860B")
-    val TEXT_WHITE = Color.parseColor("#FFFFFF")
-    val TEXT_MUTED = Color.parseColor("#8A8F9C")
+    var theme: Palette = THEMES[0]
+    val BG_OBSIDIAN: Int get() = theme.bg1
+    val BG2: Int get() = theme.bg2
+    val CARD_DARK: Int get() = theme.card
+    val INPUT_BG: Int get() = theme.input
+    val GOLD_PRIMARY: Int get() = theme.acc
+    val GOLD_LIGHT: Int get() = theme.accLight
+    val GOLD_DARK: Int get() = theme.accDark
+    val TEXT_MAIN: Int get() = theme.text
+    val TEXT_MUTED: Int get() = theme.muted
+    val BORDER: Int get() = theme.border
+    val ON_ACCENT: Int get() = theme.onAcc
     val DANGER_RED = Color.parseColor("#FF4444")
     val WARN_ORANGE = Color.parseColor("#FF9800")
     val OK_GREEN = Color.parseColor("#4CAF50")
-    val BORDER = Color.parseColor("#333A45")
+
+    fun themeById(id: String): Palette = THEMES.firstOrNull { it.id == id } ?: THEMES[0]
 
     val VAULTS = listOf(
-        VaultSpec("note", "ملاحظة سرية", listOf(
-            FieldSpec("عنوان الملاحظة"),
-            FieldSpec("الرسالة السرية", multiline = true))),
-        VaultSpec("account", "حساب", listOf(
-            FieldSpec("اسم المستخدم / البريد"),
-            FieldSpec("كلمة المرور", secret = true),
-            FieldSpec("الموقع / التطبيق"),
-            FieldSpec("ملاحظات", multiline = true))),
-        VaultSpec("document", "مستند / صورة", listOf(
-            FieldSpec("وصف المستند")), allowMedia = true),
-        VaultSpec("credit_card", "بطاقة ائتمان", listOf(
-            FieldSpec("اسم صاحب البطاقة"),
-            FieldSpec("رقم البطاقة", secret = true, numeric = true),
-            FieldSpec("تاريخ الانتهاء"),
-            FieldSpec("CVV", secret = true, numeric = true),
-            FieldSpec("PIN", secret = true, numeric = true))),
-        VaultSpec("wifi", "شبكة واي فاي", listOf(
-            FieldSpec("اسم الشبكة (SSID)"),
-            FieldSpec("كلمة المرور", secret = true))),
-        VaultSpec("crypto", "محفظة كريبتو", listOf(
-            FieldSpec("المحفظة / الشبكة"),
-            FieldSpec("العنوان"),
-            FieldSpec("العبارة السرية (Seed)", secret = true, multiline = true))),
-        VaultSpec("bank", "حساب بنكي", listOf(
-            FieldSpec("اسم البنك"),
-            FieldSpec("اسم صاحب الحساب"),
-            FieldSpec("رقم الحساب"),
-            FieldSpec("IBAN"),
-            FieldSpec("الرقم السري", secret = true, numeric = true))),
-        VaultSpec("custom", "حقول مخصصة", emptyList(), allowMedia = true, dynamic = true)
+        VaultSpec("note", "ملاحظة سرية", "Secret note", listOf(
+            FieldSpec("t", "عنوان الملاحظة", "Note title"),
+            FieldSpec("m", "الرسالة السرية", "Secret message", multiline = true))),
+        VaultSpec("account", "حساب", "Account", listOf(
+            FieldSpec("u", "اسم المستخدم / البريد", "Username / email"),
+            FieldSpec("p", "كلمة المرور", "Password", secret = true),
+            FieldSpec("s", "الموقع / التطبيق", "Website / app"),
+            FieldSpec("o", "سر المصادقة الثنائية (TOTP)", "2FA secret (TOTP)", secret = true, totp = true),
+            FieldSpec("n", "ملاحظات", "Notes", multiline = true))),
+        VaultSpec("totp", "مصادق 2FA", "2FA authenticator", listOf(
+            FieldSpec("a", "اسم الحساب / الخدمة", "Account / service"),
+            FieldSpec("o", "سر المصادقة (TOTP)", "Authenticator secret (TOTP)", secret = true, totp = true))),
+        VaultSpec("document", "مستند / صورة", "Document / image", listOf(
+            FieldSpec("d", "وصف المستند", "Description")), allowMedia = true),
+        VaultSpec("credit_card", "بطاقة ائتمان", "Credit card", listOf(
+            FieldSpec("h", "اسم صاحب البطاقة", "Card holder"),
+            FieldSpec("n", "رقم البطاقة", "Card number", secret = true, numeric = true),
+            FieldSpec("e", "تاريخ الانتهاء", "Expiry date"),
+            FieldSpec("c", "CVV", "CVV", secret = true, numeric = true),
+            FieldSpec("p", "PIN", "PIN", secret = true, numeric = true))),
+        VaultSpec("wifi", "شبكة واي فاي", "Wi-Fi network", listOf(
+            FieldSpec("s", "اسم الشبكة (SSID)", "Network name (SSID)"),
+            FieldSpec("p", "كلمة المرور", "Password", secret = true))),
+        VaultSpec("crypto", "محفظة كريبتو", "Crypto wallet", listOf(
+            FieldSpec("w", "المحفظة / الشبكة", "Wallet / network"),
+            FieldSpec("a", "العنوان", "Address"),
+            FieldSpec("s", "العبارة السرية (Seed)", "Seed phrase", secret = true, multiline = true))),
+        VaultSpec("bank", "حساب بنكي", "Bank account", listOf(
+            FieldSpec("b", "اسم البنك", "Bank name"),
+            FieldSpec("h", "اسم صاحب الحساب", "Account holder"),
+            FieldSpec("n", "رقم الحساب", "Account number"),
+            FieldSpec("i", "IBAN", "IBAN"),
+            FieldSpec("p", "الرقم السري", "PIN", secret = true, numeric = true))),
+        VaultSpec("custom", "حقول مخصصة", "Custom fields", emptyList(), allowMedia = true, dynamic = true)
     )
 
     fun spec(type: String): VaultSpec = VAULTS.firstOrNull { it.type == type } ?: VAULTS[0]
-
-    val LOCK_LABELS = arrayOf("فوراً", "30 ثانية", "دقيقة", "5 دقائق", "بدون قفل")
+    fun lockLabels() = listOf(tr("فوراً", "Immediately"), tr("30 ثانية", "30 seconds"), tr("دقيقة", "1 minute"), tr("5 دقائق", "5 minutes"), tr("بدون قفل", "Never"))
     val LOCK_VALUES = intArrayOf(0, 30, 60, 300, -1)
+    fun fontLabels() = listOf(tr("صغير", "Small"), tr("عادي", "Normal"), tr("كبير", "Large"), tr("كبير جداً", "Extra large"))
 }
 
 // ============================================================
-// CRYPTO ENGINE  (v5: AES-256-GCM + AAD, PBKDF2-600k; reads v4 too)
+// CRYPTO ENGINE (v5: AES-256-GCM + AAD, PBKDF2-600k; reads v4 too)
 // ============================================================
+class VaultPayload(
+    val type: String, val title: String, val expires: Long,
+    val data: Map<String, String>, val secrets: List<String>, val totps: List<String>,
+    val media: List<JSONObject>
+)
+
+class ParsedVault(
+    val salt: String, val iv: String, val cipher: String, val hmac: String,
+    val vaultId: String, val version: String, val iter: Int
+)
+
 object CryptoEngine {
     const val ITER_V5 = 600_000
     const val ITER_V4 = 310_000
@@ -176,91 +247,89 @@ object CryptoEngine {
         val spec = PBEKeySpec(password, salt, iter, 256)
         try {
             return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
-        } finally {
-            spec.clearPassword()
-        }
+        } finally { spec.clearPassword() }
     }
 
-    fun generateVault(
-        vaultType: String,
-        data: Map<String, String>,
-        secrets: List<String>,
-        password: CharArray,
-        media: List<JSONObject>
-    ): String {
+    private fun themeCss(t: Palette) =
+        "--bg1:${hex(t.bg1)};--bg2:${hex(t.bg2)};--card:${hex(t.card)};--inp:${hex(t.input)};--acc:${hex(t.acc)};" +
+            "--acc2:${hex(t.accLight)};--acc3:${hex(t.accDark)};--txt:${hex(t.text)};--mut:${hex(t.muted)};" +
+            "--bd:${hex(t.border)};--btxt:${hex(t.onAcc)};--dng:#FF4444;"
+
+    /** onProgress: 5 start, 30 key-derivation begins, 90 derived, 100 done. */
+    fun generateVault(p: VaultPayload, password: CharArray, theme: Palette, arabic: Boolean, onProgress: (Int) -> Unit): String {
         val vaultId = ByteArray(6).also { rng.nextBytes(it) }.joinToString("") { "%02x".format(it) }
         val salt = ByteArray(32).also { rng.nextBytes(it) }
         val iv = ByteArray(12).also { rng.nextBytes(it) }
         var key: ByteArray? = null
         try {
+            onProgress(5)
             val json = JSONObject().apply {
-                put("version", "5")
-                put("type", vaultType)
+                put("version", "5"); put("type", p.type)
                 put("created", SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date()))
-                val d = JSONObject()
-                for ((k, v) in data) d.put(k, v)
-                put("data", d)
-                put("secret", JSONArray(secrets))
-                if (media.isNotEmpty()) {
-                    val arr = JSONArray(); media.forEach { arr.put(it) }; put("media", arr)
-                }
+                if (p.title.isNotBlank()) put("title", p.title)
+                if (p.expires > 0) put("expires", p.expires)
+                val d = JSONObject(); for ((k, v) in p.data) d.put(k, v); put("data", d)
+                put("secret", JSONArray(p.secrets))
+                if (p.totps.isNotEmpty()) put("totp", JSONArray(p.totps))
+                if (p.media.isNotEmpty()) { val arr = JSONArray(); p.media.forEach { arr.put(it) }; put("media", arr) }
             }.toString()
-
             val compressed = gzip(json.toByteArray(Charsets.UTF_8))
+            onProgress(30)
             key = deriveKey(password, salt, ITER_V5)
-
+            onProgress(90)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, iv))
             cipher.updateAAD(aad(vaultId))
             val ciphertext = cipher.doFinal(compressed)
-
-            return TEMPLATE
-                .replace("%%SALT%%", b64e(salt))
-                .replace("%%IV%%", b64e(iv))
+            val html = TEMPLATE
+                .replace("%%THEME%%", themeCss(theme))
+                .replace("%%ISAR%%", if (arabic) "true" else "false")
+                .replace("%%SALT%%", b64e(salt)).replace("%%IV%%", b64e(iv))
+                .replace("%%VAULT_ID%%", vaultId).replace("%%ITER%%", ITER_V5.toString())
                 .replace("%%CIPHER%%", b64e(ciphertext))
-                .replace("%%VAULT_ID%%", vaultId)
-                .replace("%%ITER%%", ITER_V5.toString())
-        } finally {
-            key?.fill(0); salt.fill(0); iv.fill(0); password.fill('\u0000')
-        }
+            onProgress(100)
+            return html
+        } finally { key?.fill(0); salt.fill(0); iv.fill(0); password.fill('\u0000') }
     }
 
-    fun decryptVault(
-        saltB64: String, ivB64: String, cipherB64: String, hmacB64: String,
-        vaultId: String, version: String, iter: Int, password: CharArray
-    ): String? {
+    fun decryptVault(v: ParsedVault, password: CharArray): String? {
         var key: ByteArray? = null
         try {
-            val salt = b64d(saltB64); val iv = b64d(ivB64); val ct = b64d(cipherB64)
+            val salt = b64d(v.salt); val iv = b64d(v.iv); val ct = b64d(v.cipher)
             if (ct.size < 17 || salt.size < 16 || iv.size != 12) return null
-            key = deriveKey(password, salt, iter)
-            val modern = version == "5"
-            if (!modern) { // legacy v4 files: HMAC check
+            key = deriveKey(password, salt, v.iter)
+            val modern = v.version == "5"
+            if (!modern) {
                 val hk = MessageDigest.getInstance("SHA-256")
-                    .digest((String(password) + "|" + vaultId + "|hmac").toByteArray(Charsets.UTF_8))
+                    .digest((String(password) + "|" + v.vaultId + "|hmac").toByteArray(Charsets.UTF_8))
                 val mac = Mac.getInstance("HmacSHA256"); mac.init(SecretKeySpec(hk, "HmacSHA256"))
-                if (!MessageDigest.isEqual(mac.doFinal(ct), b64d(hmacB64))) return null
+                if (!MessageDigest.isEqual(mac.doFinal(ct), b64d(v.hmac))) return null
             }
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(128, iv))
-            if (modern) cipher.updateAAD(aad(vaultId))
+            if (modern) cipher.updateAAD(aad(v.vaultId))
             val compressed = cipher.doFinal(ct)
             return GZIPInputStream(ByteArrayInputStream(compressed)).bufferedReader(Charsets.UTF_8).use { it.readText() }
-        } catch (e: Exception) {
-            return null
-        } finally {
-            key?.fill(0); password.fill('\u0000')
-        }
+        } catch (e: Exception) { return null } finally { key?.fill(0); password.fill('\u0000') }
+    }
+
+    fun parseHtml(html: String): ParsedVault? {
+        fun ex(n: String): String? =
+            Regex("""(?:var|const)\s+${Regex.escape(n)}\s*=\s*["']([^"']*)["']""").find(html)?.groupValues?.get(1)
+        val salt = ex("SALT"); val iv = ex("IV"); val cipher = ex("CIPHER"); val id = ex("VAULT_ID")
+        val version = ex("VERSION") ?: "4"; val hmac = ex("HMAC") ?: ""
+        val iter = (ex("ITER")?.toIntOrNull() ?: ITER_V4).coerceIn(100_000, 5_000_000)
+        if (salt == null || iv == null || cipher == null || id == null) return null
+        if (version != "5" && hmac.isEmpty()) return null
+        return ParsedVault(salt, iv, cipher, hmac, id, version, iter)
     }
 
     private fun gzip(data: ByteArray): ByteArray {
-        val bos = ByteArrayOutputStream()
-        GZIPOutputStream(bos).use { it.write(data) }
-        return bos.toByteArray()
+        val bos = ByteArrayOutputStream(); GZIPOutputStream(bos).use { it.write(data) }; return bos.toByteArray()
     }
 
-    // Standalone viewer. No template literals / no innerHTML => no XSS, no Kotlin "$" escaping needed.
-    // Strict CSP: the page cannot talk to the network at all.
+    // Standalone viewer: no innerHTML (no XSS), strict CSP (no network), themed, TOTP, expiry, effects.
+    // NOTE: this raw string must never contain a dollar sign.
     private val TEMPLATE = """<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -271,54 +340,101 @@ object CryptoEngine {
 <meta name="robots" content="noindex,nofollow">
 <title>KEYKEEP ROYAL</title>
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:#0B0C10;color:#FFF;font-family:system-ui,-apple-system,sans-serif}
-  .bg{position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,#1F2833 0%,#0B0C10 70%);z-index:-1}
-  .header{text-align:center;padding:36px 20px 12px}
-  .crown{font-size:48px;text-shadow:0 0 20px rgba(212,175,55,.5);animation:float 3s ease-in-out infinite}
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-  h1{color:#D4AF37;margin:8px 0 0;font-family:Georgia,serif;letter-spacing:2px;font-size:24px}
-  .container{flex:1;padding:20px;max-width:600px;margin:0 auto;width:100%}
-  .glass-card{background:rgba(31,40,51,.75);border:1px solid rgba(212,175,55,.3);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-  input{width:100%;padding:16px;margin-bottom:14px;border-radius:12px;border:1px solid #333A45;background:rgba(0,0,0,.4);color:#fff;outline:none;font-size:16px}
-  input:focus{border-color:#D4AF37;box-shadow:0 0 10px rgba(212,175,55,.2)}
-  button{font-family:inherit}
-  .main-btn{width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,#F3E5AB,#D4AF37,#B8860B);color:#000;font-weight:bold;font-size:16px;cursor:pointer}
-  .main-btn:disabled{opacity:.5}
-  .err{color:#ff7a7a;font-size:14px;text-align:center;margin-top:10px;min-height:20px}
-  .meta{color:#8A8F9C;font-size:12px;text-align:center;margin-bottom:10px}
-  .data-row{display:flex;gap:8px;align-items:flex-start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)}
-  .data-row:last-child{border-bottom:none}
-  .data-key{color:#D4AF37;font-weight:bold;min-width:90px;font-size:14px}
-  .data-val{flex:1;font-family:monospace;font-size:16px;word-break:break-all;white-space:pre-wrap}
-  .tools{display:flex;gap:4px}
-  .mini{background:transparent;border:1px solid #333A45;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer}
-  .media{width:100%;border-radius:12px;margin-top:10px;border:1px solid #333A45;display:block}
-  .file-name{font-size:14px;word-break:break-all;margin-bottom:8px}
-  .file-btn{width:100%;padding:12px;border-radius:8px;border:1px solid #D4AF37;background:transparent;color:#D4AF37;font-weight:bold;cursor:pointer;margin-top:10px}
-  .lock-btn{background:transparent;border:1px solid #FF4444;color:#FF4444;border-radius:12px;padding:12px;width:100%;cursor:pointer;margin-top:4px}
-  #resultBox{display:none}
+:root{%%THEME%%}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg1);color:var(--txt);font-family:system-ui,-apple-system,sans-serif}
+.bg{position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,var(--bg2) 0%,var(--bg1) 70%);z-index:-2}
+#bgc{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.header{text-align:center;padding:34px 20px 8px}
+.crown{font-size:48px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+h1{color:var(--acc);margin:8px 0 0;font-family:Georgia,serif;letter-spacing:2px;font-size:24px}
+.sub{color:var(--mut);font-size:13px;min-height:18px;margin-top:6px}
+.container{flex:1;padding:20px;max-width:600px;margin:0 auto;width:100%}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.fadein{opacity:0;animation:fin .5s ease forwards}
+@keyframes fin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.shake{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-12px)}30%{transform:translateX(12px)}45%{transform:translateX(-9px)}60%{transform:translateX(9px)}80%{transform:translateX(-4px)}}
+input{width:100%;padding:16px;margin-bottom:14px;border-radius:12px;border:1px solid var(--bd);background:var(--inp);color:var(--txt);outline:none;font-size:16px}
+input:focus{border-color:var(--acc)}
+button{font-family:inherit}
+.main-btn{position:relative;overflow:hidden;width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--acc2),var(--acc),var(--acc3));color:var(--btxt);font-weight:bold;font-size:16px;cursor:pointer;animation:glow 2.4s ease-in-out infinite}
+.main-btn::after{content:"";position:absolute;top:0;bottom:0;width:35%;left:-40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);animation:shim 2.8s infinite}
+@keyframes shim{0%{left:-40%}45%,100%{left:120%}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 18px 2px var(--acc)}}
+.main-btn:disabled{opacity:.5}
+.err{color:#ff7a7a;font-size:14px;text-align:center;margin-top:10px;min-height:20px}
+.meta{color:var(--mut);font-size:12px;text-align:center;margin-bottom:8px}
+.title{color:var(--acc);font-size:20px;text-align:center;margin:0 0 6px;font-family:Georgia,serif}
+.row{display:flex;gap:8px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:none}
+.key{color:var(--acc);font-weight:bold;min-width:90px;font-size:14px}
+.val{flex:1;font-family:monospace;font-size:16px;word-break:break-all;white-space:pre-wrap}
+.flip{animation:flip .35s}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+.tools{display:flex;gap:4px}
+.mini{background:transparent;border:1px solid var(--bd);color:var(--txt);border-radius:8px;padding:6px 10px;cursor:pointer;min-width:40px;min-height:36px}
+.code{font-family:monospace;font-size:32px;letter-spacing:4px;color:var(--acc);text-align:center;padding:6px 0}
+.bar{height:5px;border-radius:3px;background:var(--bd);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
+.media{width:100%;border-radius:12px;margin-top:10px;border:1px solid var(--bd);display:block}
+.fname{font-size:14px;word-break:break-all;margin-bottom:8px}
+.fbtn{width:100%;padding:12px;border-radius:8px;border:1px solid var(--acc);background:transparent;color:var(--acc);font-weight:bold;cursor:pointer;margin-top:10px}
+.lock{background:transparent;border:1px solid var(--dng);color:var(--dng);border-radius:12px;padding:12px;width:100%;cursor:pointer}
+#res{display:none}
+#uIcon{position:fixed;left:50%;top:38%;font-size:84px;opacity:0;pointer-events:none;transform:translate(-50%,-50%)}
+.pop{animation:pop 1.1s ease forwards}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="bg"></div>
-<div class="header"><div class="crown">👑</div><h1>ROYAL VAULT</h1></div>
+<canvas id="bgc"></canvas>
+<div id="uIcon">🔒</div>
+<div class="header"><div class="crown">👑</div><h1>ROYAL VAULT</h1><div class="sub" id="sub"></div></div>
 <div class="container">
-  <div id="loginBox" class="glass-card">
-    <input type="password" id="pass" placeholder="أدخل مفتاح الخزنة" autocomplete="off">
-    <button class="main-btn" id="goBtn">فتح الخزنة</button>
+  <div id="login" class="card">
+    <input type="password" id="pass" autocomplete="off">
+    <button class="main-btn" id="goBtn"></button>
     <div class="err" id="err"></div>
   </div>
-  <div id="resultBox"></div>
+  <div id="res"></div>
 </div>
 <script>
 const SALT = "%%SALT%%"; const IV = "%%IV%%"; const CIPHER = "%%CIPHER%%"; const VAULT_ID = "%%VAULT_ID%%"; const VERSION = "5"; const ITER = "%%ITER%%";
+var AR = %%ISAR%%;
+function T(a, b) { return AR ? a : b; }
 var enc = new TextEncoder();
-var fails = 0, busy = false, idleTimer = null, hiddenAt = 0;
+var fails = 0, busy = false, idleTimer = null, hiddenAt = 0, totps = [], tick = null;
+var UNLOCK = T('فتح الخزنة', 'Unlock');
+var MASK_TXT = '••••••••';
+var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function byId(i) { return document.getElementById(i); }
 function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined && txt !== null) e.textContent = txt; return e; }
 function fromB64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
 function setErr(t) { byId('err').textContent = t; }
+
+(function init() {
+  document.documentElement.lang = AR ? 'ar' : 'en';
+  document.documentElement.dir = AR ? 'rtl' : 'ltr';
+  byId('pass').placeholder = T('أدخل مفتاح الخزنة', 'Enter vault key');
+  byId('goBtn').textContent = UNLOCK;
+  var t = T('خزنة مشفرة — لا تغادر جهازك', 'Encrypted vault — stays on your device'), el = byId('sub'), i = 0;
+  if (REDUCED) { el.textContent = t; } else { (function s() { el.textContent = t.substring(0, i++); if (i <= t.length) setTimeout(s, 35); })(); }
+  if (!REDUCED) {
+    var cv = byId('bgc'), cx = cv.getContext('2d'), W, H, ps = [];
+    var rs = function () { W = cv.width = innerWidth; H = cv.height = innerHeight; }; rs(); addEventListener('resize', rs);
+    for (var k = 0; k < 30; k++) ps.push({ x: Math.random() * W, y: Math.random() * H, r: 1 + Math.random() * 2.2, v: 0.15 + Math.random() * 0.5, a: 0.15 + Math.random() * 0.35 });
+    var col = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#D4AF37';
+    (function f() {
+      cx.clearRect(0, 0, W, H);
+      ps.forEach(function (p) { p.y -= p.v; if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; } cx.globalAlpha = p.a; cx.fillStyle = col; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.283); cx.fill(); });
+      requestAnimationFrame(f);
+    })();
+  }
+})();
 
 async function decryptVault(pass) {
   var iter = parseInt(ITER, 10) || 310000;
@@ -331,114 +447,151 @@ async function decryptVault(pass) {
   return JSON.parse(new TextDecoder().decode(out));
 }
 
+function b32(s) {
+  var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; s = String(s).toUpperCase().replace(/[ =-]/g, ''); if (!s) return null;
+  var bits = 0, buf = 0, out = [];
+  for (var i = 0; i < s.length; i++) { var v = A.indexOf(s[i]); if (v < 0) return null; buf = (buf << 5) | v; bits += 5; if (bits >= 8) { bits -= 8; out.push((buf >> bits) & 255); } buf &= (1 << bits) - 1; }
+  return new Uint8Array(out);
+}
+function parseTotp(inp) {
+  inp = String(inp).trim(); var d = 6, p = 30, alg = 'SHA-1', sec = inp;
+  if (/^otpauth:\/\//i.test(inp)) {
+    var q = inp.indexOf('?'); var ps = new URLSearchParams(q >= 0 ? inp.substring(q + 1) : '');
+    sec = ps.get('secret') || ''; var dd = parseInt(ps.get('digits'), 10); if (dd >= 6 && dd <= 8) d = dd;
+    var pp = parseInt(ps.get('period'), 10); if (pp >= 15 && pp <= 120) p = pp;
+    var a = (ps.get('algorithm') || '').toUpperCase(); if (a === 'SHA256') alg = 'SHA-256'; else if (a === 'SHA512') alg = 'SHA-512';
+  }
+  var k = b32(sec); return k && k.length ? { k: k, d: d, p: p, a: alg } : null;
+}
+async function totpCode(t, now) {
+  var c = Math.floor(now / 1000 / t.p), m = new Uint8Array(8);
+  for (var i = 7; i >= 0; i--) { m[i] = c & 255; c = Math.floor(c / 256); }
+  var key = await crypto.subtle.importKey('raw', t.k, { name: 'HMAC', hash: t.a }, false, ['sign']);
+  var h = new Uint8Array(await crypto.subtle.sign('HMAC', key, m)); var o = h[h.length - 1] & 15;
+  var bin = ((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3];
+  var s = String(bin % Math.pow(10, t.d)); while (s.length < t.d) s = '0' + s; return s;
+}
+function fmtCode(s) { var h = Math.ceil(s.length / 2); return s.substring(0, h) + ' ' + s.substring(h); }
+async function runTick() {
+  var now = Date.now();
+  for (var i = 0; i < totps.length; i++) {
+    var e = totps[i], rem = e.t.p - (Math.floor(now / 1000) % e.t.p);
+    e.code.textContent = fmtCode(await totpCode(e.t, now)); e.bar.style.width = (rem / e.t.p * 100) + '%'; e.sec.textContent = rem + 's';
+  }
+}
+
 function isSecret(key, list) {
   if (list) return list.indexOf(key) >= 0;
   return /password|pass|cvv|pin|seed|secret|كلمة المرور|رقم البطاقة|العبارة/i.test(key);
 }
-
 function copyText(t, btn) {
-  function done() {
-    var o = btn.textContent; btn.textContent = '✔';
-    setTimeout(function () { btn.textContent = o; }, 1200);
-    setTimeout(function () { try { navigator.clipboard.writeText(' '); } catch (e) {} }, 30000);
-  }
-  function fallback() {
-    var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); done(); } catch (e) {}
-    document.body.removeChild(ta);
-  }
+  function done() { var o = btn.textContent; btn.textContent = '✔'; setTimeout(function () { btn.textContent = o; }, 1200); setTimeout(function () { try { navigator.clipboard.writeText(' '); } catch (e) {} }, 30000); }
+  function fallback() { var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(ta); }
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
 }
-
 function toBlob(item) {
   var mime = item.mime || 'application/octet-stream', b64 = item.data || '';
-  if (b64.indexOf('data:') === 0) {
-    var m = /^data:([^;,]*)/.exec(b64); if (m && m[1]) mime = m[1];
-    b64 = b64.substring(b64.indexOf(',') + 1);
-  }
+  if (b64.indexOf('data:') === 0) { var m = /^data:([^;,]*)/.exec(b64); if (m && m[1]) mime = m[1]; b64 = b64.substring(b64.indexOf(',') + 1); }
   return new Blob([fromB64(b64)], { type: mime });
 }
-
 function saveBlob(blob, name) {
-  var url = URL.createObjectURL(blob); var a = document.createElement('a');
+  var url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = name || 'file'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
 }
+function addFx(el, i) { if (!REDUCED) { el.classList.add('fadein'); el.style.animationDelay = (i * 80) + 'ms'; } return el; }
 
 function show(data) {
-  byId('loginBox').style.display = 'none';
-  var box = byId('resultBox'); box.textContent = ''; box.style.display = 'block';
-  if (data.created) box.appendChild(mk('div', 'meta', 'أُنشئت: ' + data.created));
+  byId('login').style.display = 'none';
+  var box = byId('res'); box.textContent = ''; box.style.display = 'block';
+  var n = 0;
+  if (data.expires && Date.now() > data.expires) {
+    var ex = mk('div', 'card'); ex.appendChild(mk('div', 'title', T('انتهت صلاحية هذه الخزنة', 'This vault has expired')));
+    ex.appendChild(mk('div', 'meta', new Date(data.expires).toLocaleString())); box.appendChild(addFx(ex, 0)); return;
+  }
+  var head = mk('div', 'card');
+  if (data.title) head.appendChild(mk('div', 'title', data.title));
+  var info = [];
+  if (data.created) info.push(T('أُنشئت: ', 'Created: ') + data.created);
+  if (data.expires) info.push(T('تنتهي: ', 'Expires: ') + new Date(data.expires).toLocaleDateString());
+  if (info.length) head.appendChild(mk('div', 'meta', info.join('  •  ')));
+  if (data.title || info.length) box.appendChild(addFx(head, n++));
   var secrets = Array.isArray(data.secret) ? data.secret : null;
+  var tl = Array.isArray(data.totp) ? data.totp : [];
   var f = data.data || {};
   var keys = Object.keys(f).filter(function (k) { return f[k]; });
+  tl.forEach(function (k) {
+    var t = f[k] ? parseTotp(f[k]) : null; if (!t) return;
+    var c = mk('div', 'card'); c.appendChild(mk('div', 'key', '🔢 ' + k));
+    var code = mk('div', 'code', '------'), sec = mk('div', 'meta', ''), bar = mk('div', 'bar'), fill = mk('i'); bar.appendChild(fill);
+    var cp = mk('button', 'mini', '📋'); cp.onclick = async function () { copyText(await totpCode(t, Date.now()), cp); };
+    c.appendChild(code); c.appendChild(bar); c.appendChild(sec); c.appendChild(cp); box.appendChild(addFx(c, n++));
+    totps.push({ t: t, code: code, bar: fill, sec: sec });
+  });
   if (keys.length) {
-    var card = mk('div', 'glass-card');
+    var card = mk('div', 'card');
     keys.forEach(function (k) {
-      var v = String(f[k]); var hide = isSecret(k, secrets); var shown = !hide;
-      var row = mk('div', 'data-row');
-      var val = mk('span', 'data-val', hide ? MASK_TXT : v);
-      var tools = mk('span', 'tools');
+      var v = String(f[k]), hide = isSecret(k, secrets), shown = !hide;
+      var row = mk('div', 'row'), val = mk('span', 'val', hide ? MASK_TXT : v), tools = mk('span', 'tools');
       if (hide) {
-        var eye = mk('button', 'mini', '👁');
-        eye.onclick = function () { shown = !shown; val.textContent = shown ? v : MASK_TXT; };
+        var eye = mk('button', 'mini', '👁'); eye.setAttribute('aria-label', T('إظهار', 'Reveal'));
+        eye.onclick = function () { shown = !shown; val.classList.remove('flip'); void val.offsetWidth; if (!REDUCED) val.classList.add('flip'); setTimeout(function () { val.textContent = shown ? v : MASK_TXT; }, REDUCED ? 0 : 150); };
         tools.appendChild(eye);
       }
-      var cp = mk('button', 'mini', '📋'); cp.onclick = function () { copyText(v, cp); }; tools.appendChild(cp);
-      row.appendChild(mk('span', 'data-key', k)); row.appendChild(val); row.appendChild(tools); card.appendChild(row);
+      var cp = mk('button', 'mini', '📋'); cp.setAttribute('aria-label', T('نسخ', 'Copy')); cp.onclick = function () { copyText(v, cp); }; tools.appendChild(cp);
+      row.appendChild(mk('span', 'key', k)); row.appendChild(val); row.appendChild(tools); card.appendChild(row);
     });
-    box.appendChild(card);
+    box.appendChild(addFx(card, n++));
   }
   (data.media || []).forEach(function (item) {
-    var c = mk('div', 'glass-card');
-    c.appendChild(mk('div', 'file-name', (item.kind === 'image' ? '🖼 ' : '📎 ') + (item.name || 'file')));
+    var c = mk('div', 'card'); c.appendChild(mk('div', 'fname', (item.kind === 'image' ? '🖼 ' : '📎 ') + (item.name || 'file')));
     var blob = toBlob(item);
-    if (item.kind === 'image' && /^image\//.test(blob.type)) {
-      var img = mk('img', 'media'); img.src = URL.createObjectURL(blob); c.appendChild(img);
-    }
-    var b = mk('button', 'file-btn', '⬇ حفظ'); b.onclick = function () { saveBlob(blob, item.name); }; c.appendChild(b);
-    box.appendChild(c);
+    if (item.kind === 'image' && /^image\//.test(blob.type)) { var img = mk('img', 'media'); img.src = URL.createObjectURL(blob); c.appendChild(img); }
+    var b = mk('button', 'fbtn', T('⬇ حفظ', '⬇ Save')); b.onclick = function () { saveBlob(blob, item.name); }; c.appendChild(b);
+    box.appendChild(addFx(c, n++));
   });
-  var lk = mk('button', 'lock-btn', '🔒 قفل الآن'); lk.onclick = function () { location.reload(); }; box.appendChild(lk);
+  var lk = mk('button', 'lock', T('🔒 قفل الآن', '🔒 Lock now')); lk.onclick = function () { location.reload(); }; box.appendChild(lk);
+  if (totps.length) { runTick(); tick = setInterval(runTick, 1000); }
   armIdle();
 }
-var MASK_TXT = '••••••••';
 
 function armIdle() {
   function reset() { clearTimeout(idleTimer); idleTimer = setTimeout(function () { location.reload(); }, 90000); }
   ['click', 'touchstart', 'keydown', 'scroll'].forEach(function (ev) { document.addEventListener(ev, reset, { passive: true }); });
   reset();
 }
-
 function cooldown(sec) {
   var btn = byId('goBtn');
-  if (sec <= 0) { btn.disabled = false; btn.textContent = 'فتح الخزنة'; return; }
-  btn.disabled = true; btn.textContent = 'انتظر ' + sec + ' ث';
+  if (sec <= 0) { btn.disabled = false; btn.textContent = UNLOCK; return; }
+  btn.disabled = true; btn.textContent = T('انتظر ', 'Wait ') + sec + 's';
   setTimeout(function () { cooldown(sec - 1); }, 1000);
 }
-
+function unlockAnim() {
+  if (REDUCED) return; var ic = byId('uIcon'); ic.textContent = '🔒'; ic.classList.remove('pop'); void ic.offsetWidth; ic.classList.add('pop');
+  setTimeout(function () { ic.textContent = '🔓'; }, 300);
+}
 async function unlock() {
   if (busy) return;
   var pass = byId('pass').value; if (!pass) return;
-  if (!window.crypto || !crypto.subtle) { setErr('⚠️ المتصفح يمنع التشفير. افتح الملف بمتصفح حديث أو عبر تطبيق KEYKEEP.'); return; }
-  busy = true; byId('goBtn').disabled = true; setErr('جاري فك التشفير...');
+  if (!window.crypto || !crypto.subtle) { setErr(T('⚠️ المتصفح يمنع التشفير. افتح الملف بمتصفح حديث أو عبر تطبيق KEYKEEP.', '⚠️ Browser blocks crypto. Open in a modern browser or the KEYKEEP app.')); return; }
+  busy = true; byId('goBtn').disabled = true; setErr(T('جاري فك التشفير...', 'Decrypting...'));
   try {
     var data = await decryptVault(pass);
-    byId('pass').value = ''; setErr(''); show(data);
+    byId('pass').value = ''; setErr(''); unlockAnim(); show(data);
   } catch (e) {
-    fails++; setErr('مفتاح خاطئ أو ملف تالف');
+    fails++; setErr(T('مفتاح خاطئ أو ملف تالف', 'Wrong key or corrupted file'));
+    var lg = byId('login'); lg.classList.remove('shake'); void lg.offsetWidth; lg.classList.add('shake');
+    if (navigator.vibrate) navigator.vibrate(120);
     cooldown(fails >= 3 ? Math.min(Math.pow(2, fails - 2), 60) : 0);
   }
   busy = false;
-  if (byId('goBtn').textContent === 'فتح الخزنة' || fails < 3) byId('goBtn').disabled = false;
+  if (fails < 3 && byId('res').style.display !== 'block') byId('goBtn').disabled = false;
 }
-
 byId('goBtn').addEventListener('click', unlock);
 byId('pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') unlock(); });
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) hiddenAt = Date.now();
-  else if (hiddenAt && byId('resultBox').style.display === 'block' && Date.now() - hiddenAt > 30000) location.reload();
+  else if (hiddenAt && byId('res').style.display === 'block' && Date.now() - hiddenAt > 30000) location.reload();
 });
 </script>
 </body>
@@ -446,49 +599,175 @@ document.addEventListener('visibilitychange', function () {
 }
 
 // ============================================================
-// STORAGE & STATS & SETTINGS
+// TOTP (RFC 6238)
+// ============================================================
+class TotpParams(val key: ByteArray, val digits: Int, val period: Int, val algo: String)
+
+object TotpEngine {
+    private const val B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+
+    fun parse(input: String): TotpParams? {
+        var raw = input.trim(); var digits = 6; var period = 30; var algo = "HmacSHA1"
+        if (raw.startsWith("otpauth://", ignoreCase = true)) {
+            val u = Uri.parse(raw)
+            raw = u.getQueryParameter("secret") ?: return null
+            digits = u.getQueryParameter("digits")?.toIntOrNull()?.takeIf { it in 6..8 } ?: 6
+            period = u.getQueryParameter("period")?.toIntOrNull()?.takeIf { it in 15..120 } ?: 30
+            algo = when (u.getQueryParameter("algorithm")?.uppercase(Locale.ROOT)) {
+                "SHA256" -> "HmacSHA256"; "SHA512" -> "HmacSHA512"; else -> "HmacSHA1"
+            }
+        }
+        val key = base32(raw) ?: return null
+        return if (key.isEmpty()) null else TotpParams(key, digits, period, algo)
+    }
+
+    private fun base32(s: String): ByteArray? {
+        val clean = s.uppercase(Locale.ROOT).filter { it != ' ' && it != '-' && it != '=' }
+        if (clean.isEmpty()) return null
+        val out = ByteArrayOutputStream(); var buffer = 0; var bits = 0
+        for (ch in clean) {
+            val v = B32.indexOf(ch); if (v < 0) return null
+            buffer = (buffer shl 5) or v; bits += 5
+            if (bits >= 8) { bits -= 8; out.write((buffer shr bits) and 0xFF) }
+            buffer = buffer and ((1 shl bits) - 1)
+        }
+        return out.toByteArray()
+    }
+
+    fun code(p: TotpParams, timeMs: Long): String {
+        val counter = timeMs / 1000 / p.period
+        val msg = ByteBuffer.allocate(8).putLong(counter).array()
+        val mac = Mac.getInstance(p.algo); mac.init(SecretKeySpec(p.key, p.algo))
+        val h = mac.doFinal(msg); val off = h[h.size - 1].toInt() and 0xF
+        val bin = ((h[off].toInt() and 0x7F) shl 24) or ((h[off + 1].toInt() and 0xFF) shl 16) or
+            ((h[off + 2].toInt() and 0xFF) shl 8) or (h[off + 3].toInt() and 0xFF)
+        var mod = 1; repeat(p.digits) { mod *= 10 }
+        return (bin % mod).toString().padStart(p.digits, '0')
+    }
+
+    fun remaining(p: TotpParams, timeMs: Long): Int = p.period - ((timeMs / 1000) % p.period).toInt()
+}
+
+// ============================================================
+// CUSTOM VIEWS / DRAWABLES (effects)
+// ============================================================
+class ParticlesView(ctx: Context) : View(ctx) {
+    private class P(var x: Float, var y: Float, val r: Float, val v: Float, val a: Int, val d: Float)
+    private val ps = ArrayList<P>()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var anim: ValueAnimator? = null
+    var color: Int = Color.WHITE
+
+    override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) {
+        ps.clear()
+        repeat(26) { ps.add(P(rng.nextFloat() * w, rng.nextFloat() * h, 1.5f + rng.nextFloat() * 2.5f, 0.15f + rng.nextFloat() * 0.5f, 40 + rng.nextInt(90), (rng.nextFloat() - 0.5f) * 0.3f)) }
+    }
+    override fun onDraw(c: Canvas) {
+        for (p in ps) {
+            p.y -= p.v; p.x += p.d
+            if (p.y < -10f) { p.y = height + 10f; p.x = rng.nextFloat() * width }
+            paint.color = color; paint.alpha = p.a; c.drawCircle(p.x, p.y, p.r, paint)
+        }
+    }
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        anim = ValueAnimator.ofFloat(0f, 1f).apply { duration = 1000; repeatCount = ValueAnimator.INFINITE; addUpdateListener { invalidate() }; start() }
+    }
+    override fun onDetachedFromWindow() { anim?.cancel(); anim = null; super.onDetachedFromWindow() }
+}
+
+class CountdownRing(ctx: Context) : View(ctx) {
+    var fraction = 1f; var label = ""
+    var ringColor = Color.WHITE; var trackColor = Color.GRAY; var textColor = Color.WHITE
+    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND }
+    private val txt = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val rect = RectF()
+    override fun onDraw(c: Canvas) {
+        val sw = width * 0.09f; ring.strokeWidth = sw
+        rect.set(sw, sw, width - sw, height - sw)
+        ring.color = trackColor; c.drawArc(rect, 0f, 360f, false, ring)
+        ring.color = ringColor; c.drawArc(rect, -90f, 360f * fraction, false, ring)
+        txt.color = textColor; txt.textSize = width * 0.32f
+        c.drawText(label, width / 2f, height / 2f + txt.textSize / 3f, txt)
+    }
+}
+
+class ShimmerDrawable(private val colors: IntArray, private val radius: Float, private val animated: Boolean) : Drawable() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val band = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val rect = RectF(); private val path = Path()
+    private var phase = 0f; private var anim: ValueAnimator? = null
+
+    override fun draw(c: Canvas) {
+        rect.set(bounds)
+        paint.shader = LinearGradient(rect.left, 0f, rect.right, 0f, colors, null, Shader.TileMode.CLAMP)
+        c.drawRoundRect(rect, radius, radius, paint)
+        if (animated && phase > 0f) {
+            val bw = rect.width() * 0.35f; val x = rect.left - bw + (rect.width() + bw * 2f) * phase
+            c.save(); path.reset(); path.addRoundRect(rect, radius, radius, Path.Direction.CW); c.clipPath(path)
+            band.shader = LinearGradient(x, 0f, x + bw, 0f, intArrayOf(0x00FFFFFF, 0x66FFFFFF, 0x00FFFFFF), null, Shader.TileMode.CLAMP)
+            c.drawRect(rect, band); c.restore()
+        }
+    }
+    fun start() {
+        if (!animated || anim != null) return
+        anim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 2800; repeatCount = ValueAnimator.INFINITE
+            addUpdateListener { val f = it.animatedValue as Float; phase = if (f < 0.45f) f / 0.45f else 0f; invalidateSelf() }
+            start()
+        }
+    }
+    fun stop() { anim?.cancel(); anim = null }
+    override fun setAlpha(a: Int) { paint.alpha = a }
+    override fun setColorFilter(cf: ColorFilter?) { paint.colorFilter = cf }
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+// ============================================================
+// STORAGE / SETTINGS
 // ============================================================
 object VaultStore {
     private const val PREFS = "keykeep_royal_v4"
     private lateinit var prefs: SharedPreferences
 
-    var vaultCount = 0
-    var attachmentCount = 0
-    var usedSpace = 0L
-    var lastActivity = "لا يوجد"
+    var vaultCount = 0; var attachmentCount = 0; var usedSpace = 0L; var lastActivity = ""
 
     fun init(ctx: Context) {
         prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        loadStats()
-    }
-
-    private fun loadStats() {
         vaultCount = prefs.getInt("v_count", 0); attachmentCount = prefs.getInt("a_count", 0)
-        usedSpace = prefs.getLong("u_space", 0L); lastActivity = prefs.getString("l_act", "لا يوجد") ?: "لا يوجد"
+        usedSpace = prefs.getLong("u_space", 0L); lastActivity = prefs.getString("l_act", "") ?: ""
+        AppConfig.theme = AppConfig.themeById(prefs.getString("theme", "royal") ?: "royal")
     }
 
     fun addVaultStats(attachments: Int, size: Long) {
         vaultCount++; attachmentCount += attachments; usedSpace += size
         lastActivity = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date())
-        prefs.edit().putInt("v_count", vaultCount).putInt("a_count", attachmentCount)
-            .putLong("u_space", usedSpace).putString("l_act", lastActivity).apply()
+        prefs.edit().putInt("v_count", vaultCount).putInt("a_count", attachmentCount).putLong("u_space", usedSpace).putString("l_act", lastActivity).apply()
     }
-
     fun resetStats() {
-        vaultCount = 0; attachmentCount = 0; usedSpace = 0L; lastActivity = "لا يوجد"
-        prefs.edit().putInt("v_count", 0).putInt("a_count", 0).putLong("u_space", 0L).putString("l_act", lastActivity).apply()
+        vaultCount = 0; attachmentCount = 0; usedSpace = 0L; lastActivity = ""
+        prefs.edit().putInt("v_count", 0).putInt("a_count", 0).putLong("u_space", 0L).putString("l_act", "").apply()
     }
 
-    fun isScreenSecure(): Boolean = prefs.getBoolean("secure_screen", true) // secure by default
+    fun isArabic(): Boolean = try { (prefs.getString("lang", null) ?: Locale.getDefault().language) == "ar" } catch (e: Exception) { true }
+    fun setLang(v: String) { prefs.edit().putString("lang", v).apply() }
+    fun setTheme(id: String) { prefs.edit().putString("theme", id).apply(); AppConfig.theme = AppConfig.themeById(id) }
+    fun effects() = prefs.getBoolean("effects", true)
+    fun setEffects(v: Boolean) { prefs.edit().putBoolean("effects", v).apply() }
+    fun haptic() = prefs.getBoolean("haptic", true)
+    fun setHaptic(v: Boolean) { prefs.edit().putBoolean("haptic", v).apply() }
+    fun fontIndex() = prefs.getInt("font_i", 1).coerceIn(0, 3)
+    fun setFontIndex(v: Int) { prefs.edit().putInt("font_i", v).apply() }
+    fun fontScale(): Float = floatArrayOf(0.9f, 1f, 1.15f, 1.3f)[fontIndex()]
+
+    fun isScreenSecure() = prefs.getBoolean("secure_screen", true)
     fun setScreenSecure(v: Boolean) { prefs.edit().putBoolean("secure_screen", v).apply() }
-
-    fun autoLockSeconds(): Int = prefs.getInt("auto_lock_s", 30)
+    fun autoLockSeconds() = prefs.getInt("auto_lock_s", 30)
     fun setAutoLockSeconds(v: Int) { prefs.edit().putInt("auto_lock_s", v).apply() }
-
-    fun isAppLock(): Boolean = prefs.getBoolean("app_lock", false)
+    fun isAppLock() = prefs.getBoolean("app_lock", false)
     fun setAppLock(v: Boolean) { prefs.edit().putBoolean("app_lock", v).apply() }
 
-    // UI-level throttling of wrong passwords (the real protection is PBKDF2 + a strong password)
     fun lockRemainingMs(): Long = (prefs.getLong("lock_until", 0L) - System.currentTimeMillis()).coerceAtLeast(0L)
     fun recordFailure() {
         val n = prefs.getInt("fail_count", 0) + 1
@@ -501,46 +780,73 @@ object VaultStore {
 // ============================================================
 // MAIN ACTIVITY
 // ============================================================
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
 
     private class CustomRow(var name: String = "", var value: String = "", var secret: Boolean = false)
+    private class Collected(val data: LinkedHashMap<String, String>, val secrets: List<String>, val totps: List<String>)
+    private class TotpEntry(val p: TotpParams, val codeView: TextView, val bar: ProgressBar)
+    private class ProgressUi(val dlg: AlertDialog, val bar: ProgressBar, val pct: TextView, val stage: TextView) { var anim: ValueAnimator? = null }
+    private enum class Out { SAVE, SHARE }
 
+    // ---- state
     private var currentScreen = "home"
-    private var pendingSaveHtml: String? = null
-    private var pendingSaveFileData: String? = null
+    private var lastRenderedScreen = ""
     private var decryptedPayloadJson: String? = null
-    private val mediaItems = mutableListOf<JSONObject>()
+    private var pendingSaveFileData: String? = null
+    private var unlockAnimPending = false
+    private var animateNow = false
 
+    private val mediaItems = mutableListOf<JSONObject>()
     private var selectedVaultType = "note"
     private val fieldValues = mutableMapOf<String, MutableMap<String, String>>()
     private val customRows = mutableListOf(CustomRow())
-
-    private var draftPass = ""
-    private var draftPassConfirm = ""
+    private var draftPass = ""; private var draftPassConfirm = ""
+    private var draftTitle = ""; private var useTitleInFile = false
+    private var expiryChoice = 0; private var draftExpiry = 0L
 
     private var lastPausedTime = 0L
     private var suppressLockOnce = false
     private var appUnlocked = false
+    private var pendingIncomingUri: Uri? = null
 
     private val handler = Handler(Looper.getMainLooper())
-    private val clearClipRunnable = Runnable { clearClipboard() }
-    private lateinit var rootContainer: FrameLayout
+    private val clearClipRunnable = Runnable { clearClipboard(); hideRing() }
+    private var ring: CountdownRing? = null
+    private var ringAnim: ValueAnimator? = null
+    private val totpEntries = mutableListOf<TotpEntry>()
+    private val totpTick = object : Runnable { override fun run() { tickTotp(); handler.postDelayed(this, 1000) } }
 
-    // ---------------------------------------------------------- lifecycle
+    private lateinit var rootContainer: FrameLayout
+    private lateinit var contentHolder: FrameLayout
+    private lateinit var overlay: FrameLayout
+
+    // ---- Activity Result API (edit #2)
+    private var onResult: ((Int, Intent?) -> Unit)? = null
+    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val cb = onResult; onResult = null; cb?.invoke(r.resultCode, r.data)
+    }
+    private fun launchForResult(intent: Intent, cb: (Int, Intent?) -> Unit) {
+        suppressLockOnce = true; onResult = cb; launcher.launch(intent)
+    }
+
+    private val backCallback = object : OnBackPressedCallback(false) { override fun handleOnBackPressed() { goHome() } }
+
+    // ============================================================ lifecycle
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
             VaultStore.init(this)
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            onBackPressedDispatcher.addCallback(this, backCallback)
             applyScreenSecurity()
-            rootContainer = FrameLayout(this)
+            rootContainer = FrameLayout(this); contentHolder = FrameLayout(this); overlay = FrameLayout(this)
+            rootContainer.addView(contentHolder, FrameLayout.LayoutParams(MATCH, MATCH))
+            rootContainer.addView(overlay, FrameLayout.LayoutParams(MATCH, MATCH))
             setContentView(rootContainer)
-            if (needsAppLock()) {
-                currentScreen = "locked"; renderUI()
-                rootContainer.post { requestDeviceAuth() }
-            } else {
-                appUnlocked = true; renderUI()
-            }
+            cleanShareCache()
+            if (needsAppLock()) { currentScreen = "locked"; renderUI(); rootContainer.post { requestDeviceAuth() } }
+            else { appUnlocked = true; renderUI() }
+            handleIncoming(intent)
         } catch (e: Throwable) {
             setContentView(TextView(this).apply {
                 text = "FATAL ERROR:\n${e.message}\n\n${e.stackTraceToString()}"
@@ -549,69 +855,84 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); handleIncoming(intent) }
+
     override fun onResume() {
         super.onResume()
+        applyScreenSecurity()
+        if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(true)
+        if (totpEntries.isNotEmpty()) handler.post(totpTick)
         if (suppressLockOnce) { suppressLockOnce = false; return }
         val limit = VaultStore.autoLockSeconds()
         if (limit < 0 || lastPausedTime == 0L) return
         if (System.currentTimeMillis() - lastPausedTime >= limit * 1000L) lockNow()
     }
 
-    override fun onPause() { super.onPause(); lastPausedTime = System.currentTimeMillis() }
-
-    override fun onDestroy() {
-        handler.removeCallbacks(clearClipRunnable)
-        super.onDestroy()
+    override fun onPause() {
+        super.onPause()
+        lastPausedTime = System.currentTimeMillis()
+        handler.removeCallbacks(totpTick)
+        // improvement #6: blank the recents thumbnail whenever we leave the app
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        if (Build.VERSION.SDK_INT >= 33) setRecentsScreenshotEnabled(false)
     }
 
-    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
-    override fun onBackPressed() {
-        if (currentScreen == "create" || currentScreen == "open" || currentScreen == "view") goHome()
-        else super.onBackPressed()
-    }
+    override fun onDestroy() { handler.removeCallbacksAndMessages(null); ringAnim?.cancel(); super.onDestroy() }
 
     private fun goHome() { currentScreen = "home"; decryptedPayloadJson = null; renderUI() }
 
     private fun lockNow() {
         lastPausedTime = 0L
-        decryptedPayloadJson = null; pendingSaveHtml = null; pendingSaveFileData = null
-        if (needsAppLock()) {
-            wipeDrafts(); appUnlocked = false; currentScreen = "locked"; renderUI()
-        } else if (currentScreen == "view") {
-            currentScreen = "home"; renderUI()
+        val appLock = needsAppLock()
+        if (!appLock && currentScreen != "view") return
+        decryptedPayloadJson = null; pendingSaveFileData = null; onResult = null
+        handler.removeCallbacks(totpTick)
+        clearClipboard(); hideRing()
+        blurOutThen {
+            if (appLock) { wipeDrafts(); appUnlocked = false; currentScreen = "locked" } else currentScreen = "home"
+            renderUI()
         }
     }
 
     private fun wipeDrafts() {
         mediaItems.clear(); fieldValues.clear(); customRows.clear(); customRows.add(CustomRow())
-        draftPass = ""; draftPassConfirm = ""; pendingSaveHtml = null
+        draftPass = ""; draftPassConfirm = ""; draftTitle = ""; useTitleInFile = false; expiryChoice = 0; draftExpiry = 0L
     }
 
-    // ---------------------------------------------------------- device lock
-    private fun deviceSecure(): Boolean {
-        val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        return km.isDeviceSecure
-    }
+    private fun wipeEverything() { wipeDrafts(); clearClipboard(); hideRing(); goHome(); toast(tr("تم مسح الذاكرة والحافظة", "Memory and clipboard cleared")) }
 
+    // ============================================================ app lock / incoming files
+    private fun deviceSecure() = (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isDeviceSecure
     private fun needsAppLock() = VaultStore.isAppLock() && deviceSecure()
 
     private fun requestDeviceAuth() {
         val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         @Suppress("DEPRECATION")
-        val intent = km.createConfirmDeviceCredentialIntent("KEYKEEP", "أكّد هويتك لفتح التطبيق")
-        if (intent == null) { appUnlocked = true; currentScreen = "home"; renderUI(); return }
-        suppressLockOnce = true
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, REQ_AUTH)
+        val intent = km.createConfirmDeviceCredentialIntent("KEYKEEP", tr("أكّد هويتك لفتح التطبيق", "Confirm your identity to unlock"))
+        if (intent == null) { appUnlocked = true; currentScreen = "home"; renderUI(); consumeIncoming(); return }
+        launchForResult(intent) { code, _ ->
+            if (code == RESULT_OK) { appUnlocked = true; currentScreen = "home"; renderUI(); consumeIncoming() }
+        }
     }
 
-    // ---------------------------------------------------------- ui helpers
-    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
-    private fun toast(msg: String, long: Boolean = false) =
-        Toast.makeText(this, msg, if (long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
+    private fun handleIncoming(i: Intent?) {
+        if (i?.action == Intent.ACTION_VIEW && i.data != null) { pendingIncomingUri = i.data; consumeIncoming() }
+    }
+    private fun consumeIncoming() {
+        val u = pendingIncomingUri ?: return
+        if (!appUnlocked) return
+        pendingIncomingUri = null; currentScreen = "open"; renderUI(); openVaultFile(u)
+    }
 
+    // ============================================================ helpers
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+    private fun fs(v: Float): Float = v * VaultStore.fontScale()
+    private fun toast(msg: String, long: Boolean = false) = Toast.makeText(this, msg, if (long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
     private fun lp(w: Int = MATCH, h: Int = WRAP, top: Int = 0, bottom: Int = 0) =
         LinearLayout.LayoutParams(w, h).also { it.topMargin = dp(top); it.bottomMargin = dp(bottom) }
+
+    private fun effectsOn(): Boolean = VaultStore.effects() &&
+        Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
 
     private fun applyScreenSecurity() {
         try {
@@ -620,20 +941,47 @@ class MainActivity : Activity() {
         } catch (e: Exception) {}
     }
 
+    private fun dialogBuilder() = AlertDialog.Builder(this,
+        if (AppConfig.theme.light) android.R.style.Theme_Material_Light_Dialog_Alert else android.R.style.Theme_Material_Dialog_Alert)
+
+    private fun secureDialog(d: Dialog) {
+        if (VaultStore.isScreenSecure()) d.window?.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+    }
+
+    private fun haptic(ok: Boolean) {
+        if (!VaultStore.haptic()) return
+        val k = if (Build.VERSION.SDK_INT >= 30) (if (ok) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.REJECT)
+        else (if (ok) HapticFeedbackConstants.KEYBOARD_TAP else HapticFeedbackConstants.LONG_PRESS)
+        rootContainer.performHapticFeedback(k)
+    }
+
     private fun luxuryBg(color: Int, radius: Int, strokeWidth: Int = 1, strokeColor: Int = AppConfig.GOLD_PRIMARY) =
-        GradientDrawable().apply {
-            setColor(color); cornerRadius = dp(radius).toFloat()
-            if (strokeWidth > 0) setStroke(dp(strokeWidth), strokeColor)
-        }
+        GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat(); if (strokeWidth > 0) setStroke(dp(strokeWidth), strokeColor) }
+
+    private fun ripple(content: Drawable, radius: Int, color: Int): RippleDrawable {
+        val mask = GradientDrawable().apply { setColor(Color.WHITE); cornerRadius = dp(radius).toFloat() }
+        return RippleDrawable(ColorStateList.valueOf(color), content, mask)
+    }
+
+    private fun bindAnim(v: View, a: Animator) {
+        v.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(x: View) { if (!a.isStarted) a.start() }
+            override fun onViewDetachedFromWindow(x: View) { a.cancel() }
+        })
+    }
 
     private fun goldButton(label: String, heightDp: Int = 56): Button = Button(this).apply {
-        text = label; setTextColor(Color.BLACK); textSize = 16f; typeface = Typeface.SERIF
-        isAllCaps = false; stateListAnimator = null
-        background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(AppConfig.GOLD_LIGHT, AppConfig.GOLD_PRIMARY, AppConfig.GOLD_DARK)).apply { cornerRadius = dp(12).toFloat() }
+        text = label; setTextColor(AppConfig.ON_ACCENT); textSize = fs(16f); typeface = Typeface.SERIF; isAllCaps = false; stateListAnimator = null
+        val fx = effectsOn()
+        val shimmer = ShimmerDrawable(intArrayOf(AppConfig.GOLD_LIGHT, AppConfig.GOLD_PRIMARY, AppConfig.GOLD_DARK), dp(12).toFloat(), fx)
+        background = ripple(shimmer, 12, withAlpha(Color.WHITE, 0x70))
+        if (fx) addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) { shimmer.start() }
+            override fun onViewDetachedFromWindow(v: View) { shimmer.stop() }
+        })
         layoutParams = lp(h = dp(heightDp))
-        setOnTouchListener { v, event ->
-            when (event.action) {
+        setOnTouchListener { v, e ->
+            when (e.action) {
                 MotionEvent.ACTION_DOWN -> v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).start()
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
             }
@@ -642,76 +990,122 @@ class MainActivity : Activity() {
     }
 
     private fun outlineButton(label: String, heightDp: Int = 48, color: Int = AppConfig.GOLD_PRIMARY): Button = Button(this).apply {
-        text = label; setTextColor(color); textSize = 15f; typeface = Typeface.SERIF
-        isAllCaps = false; stateListAnimator = null
-        background = luxuryBg(Color.TRANSPARENT, 12, 1, color)
+        text = label; setTextColor(color); textSize = fs(15f); typeface = Typeface.SERIF; isAllCaps = false; stateListAnimator = null
+        background = ripple(luxuryBg(Color.TRANSPARENT, 12, 1, color), 12, withAlpha(color, 0x40))
         layoutParams = lp(h = dp(heightDp))
     }
 
-    private fun createLabel(text: String) = TextView(this).apply {
-        this.text = text; setTextColor(AppConfig.GOLD_PRIMARY); textSize = 13f
-        typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); setPadding(0, dp(16), 0, dp(8))
+    private fun iconButton(emoji: String, desc: String, size: Float = 18f, onClick: () -> Unit) = TextView(this).apply {
+        text = emoji; textSize = fs(size); gravity = Gravity.CENTER; minWidth = dp(44); minHeight = dp(44)
+        contentDescription = desc; isClickable = true; isFocusable = true
+        setOnClickListener { onClick() }
+    }
+
+    private fun createLabel(t: String) = TextView(this).apply {
+        text = t; setTextColor(AppConfig.GOLD_PRIMARY); textSize = fs(13f); typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); setPadding(0, dp(16), 0, dp(8))
     }
 
     private fun createLuxuryInput(hint: String, multiLine: Boolean) = EditText(this).apply {
-        this.hint = hint; setTextColor(AppConfig.TEXT_WHITE); setHintTextColor(Color.parseColor("#555555"))
-        background = luxuryBg(Color.parseColor("#151A20"), 8, 1, AppConfig.BORDER)
-        setPadding(dp(14), dp(14), dp(14), dp(14))
+        this.hint = hint; textSize = fs(15f); setTextColor(AppConfig.TEXT_MAIN); setHintTextColor(withAlpha(AppConfig.TEXT_MUTED, 0xAA))
+        background = luxuryBg(AppConfig.INPUT_BG, 8, 1, AppConfig.BORDER); setPadding(dp(14), dp(14), dp(14), dp(14))
         if (multiLine) { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE; minLines = 3; gravity = Gravity.TOP or Gravity.START }
         else inputType = InputType.TYPE_CLASS_TEXT
     }
 
     private fun createBackButton() = Button(this).apply {
-        text = "→ رجوع للوحة التحكم"; setTextColor(AppConfig.TEXT_MUTED); background = null
-        isAllCaps = false; gravity = Gravity.START; setPadding(0, 0, 0, dp(16))
+        text = tr("→ رجوع للوحة التحكم", "← Back to dashboard"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(14f)
+        background = null; isAllCaps = false; gravity = Gravity.START or Gravity.CENTER_VERTICAL; minHeight = dp(48); setPadding(0, 0, 0, dp(8))
         setOnClickListener { goHome() }
+    }
+
+    private fun themedAdapter(items: List<String>) = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
+        override fun getView(pos: Int, cv: View?, parent: ViewGroup): View =
+            (super.getView(pos, cv, parent) as TextView).apply { setTextColor(AppConfig.TEXT_MAIN); textSize = fs(15f); setPadding(dp(12), dp(12), dp(12), dp(12)) }
+        override fun getDropDownView(pos: Int, cv: View?, parent: ViewGroup): View =
+            (super.getDropDownView(pos, cv, parent) as TextView).apply { setTextColor(AppConfig.TEXT_MAIN); setBackgroundColor(AppConfig.CARD_DARK); textSize = fs(15f); setPadding(dp(14), dp(14), dp(14), dp(14)) }
     }
 
     private fun setVisible(et: EditText, visible: Boolean, numeric: Boolean) {
         val sel = et.selectionEnd
-        et.inputType = if (numeric) {
-            InputType.TYPE_CLASS_NUMBER or (if (visible) 0 else InputType.TYPE_NUMBER_VARIATION_PASSWORD)
-        } else {
-            InputType.TYPE_CLASS_TEXT or (if (visible) InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else InputType.TYPE_TEXT_VARIATION_PASSWORD)
-        }
+        et.inputType = if (numeric) InputType.TYPE_CLASS_NUMBER or (if (visible) 0 else InputType.TYPE_NUMBER_VARIATION_PASSWORD)
+        else InputType.TYPE_CLASS_TEXT or (if (visible) InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD else InputType.TYPE_TEXT_VARIATION_PASSWORD)
         et.typeface = Typeface.DEFAULT
         if (sel >= 0) et.setSelection(sel.coerceAtMost(et.text.length))
     }
 
-    /** Hidden-by-default input with an eye toggle. Returns (row, edit). */
     private fun secretInput(hint: String, initial: String, numeric: Boolean = false, onChange: (String) -> Unit): Pair<LinearLayout, EditText> {
         val et = createLuxuryInput(hint, false)
-        setVisible(et, false, numeric)
-        et.setText(initial); et.watch(onChange)
+        setVisible(et, false, numeric); et.setText(initial); et.watch(onChange)
         et.layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
-        val eye = TextView(this).apply { text = "👁"; textSize = 20f; setPadding(dp(12), 0, dp(4), 0); alpha = 0.5f; tag = false }
-        eye.setOnClickListener {
-            val v = !(eye.tag as Boolean); eye.tag = v; eye.alpha = if (v) 1f else 0.5f
-            setVisible(et, v, numeric)
-        }
+        val eye = iconButton("👁", tr("إظهار / إخفاء", "Show / hide"), 20f) {}
+        eye.alpha = 0.5f; eye.tag = false
+        eye.setOnClickListener { val v = !(eye.tag as Boolean); eye.tag = v; eye.alpha = if (v) 1f else 0.5f; setVisible(et, v, numeric) }
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         row.addView(et); row.addView(eye)
         return Pair(row, et)
     }
 
-    // ---------------------------------------------------------- render
+    private fun shake(v: View) {
+        if (!effectsOn()) return
+        val d = dp(14).toFloat()
+        ObjectAnimator.ofFloat(v, "translationX", 0f, -d, d, -d * 0.7f, d * 0.7f, -d * 0.35f, d * 0.35f, 0f).setDuration(420).start()
+    }
+
+    private fun flipText(tv: TextView, newText: String) {
+        if (!effectsOn()) { tv.text = newText; return }
+        tv.cameraDistance = 8000f * resources.displayMetrics.density
+        tv.animate().rotationX(90f).setDuration(110).withEndAction {
+            tv.text = newText; tv.rotationX = -90f; tv.animate().rotationX(0f).setDuration(110).start()
+        }.start()
+    }
+
+    private fun blurOutThen(action: () -> Unit) {
+        val v = contentHolder.getChildAt(0)
+        if (v == null || !effectsOn()) { action(); return }
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 260
+            addUpdateListener { a ->
+                val f = a.animatedValue as Float
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { val r = 1f + 24f * f; v.setRenderEffect(RenderEffect.createBlurEffect(r, r, Shader.TileMode.CLAMP)) }
+                v.alpha = 1f - 0.6f * f
+            }
+            addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(a: Animator) { action() } })
+            start()
+        }
+    }
+
+    // ============================================================ render
     private fun renderUI() {
         applyScreenSecurity()
+        handler.removeCallbacks(totpTick); totpEntries.clear()
+        backCallback.isEnabled = currentScreen == "create" || currentScreen == "open" || currentScreen == "view"
+        val fx = effectsOn()
+        val screenChanged = currentScreen != lastRenderedScreen
+        val forward = currentScreen != "home"
+        lastRenderedScreen = currentScreen
+        animateNow = screenChanged && fx
+        val arabic = VaultStore.isArabic()
+
         val root = FrameLayout(this).apply {
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
-            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(AppConfig.BG_OBSIDIAN, Color.parseColor("#151A20")))
+            layoutDirection = if (arabic) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+            background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(AppConfig.BG_OBSIDIAN, AppConfig.BG2))
         }
+        if (fx) root.addView(ParticlesView(this).apply { color = AppConfig.GOLD_PRIMARY }, FrameLayout.LayoutParams(MATCH, MATCH))
         val scrollView = ScrollView(this).apply { layoutParams = FrameLayout.LayoutParams(MATCH, MATCH) }
-        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(50), dp(20), dp(32)) }
+        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(46), dp(20), dp(32)) }
         scrollView.addView(container); root.addView(scrollView)
 
-        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(20)) }
-        header.addView(TextView(this).apply {
-            text = "👑 KEYKEEP"; textSize = 24f; setTextColor(AppConfig.GOLD_PRIMARY)
-            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); letterSpacing = 0.1f
-            layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
+        val header = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, 0, 0, dp(16)) }
+        val crown = TextView(this).apply { text = "👑"; textSize = fs(26f); setPadding(0, 0, dp(8), 0) }
+        if (fx) bindAnim(crown, ObjectAnimator.ofFloat(crown, "translationY", 0f, -dp(5).toFloat()).apply {
+            duration = 1400; repeatCount = ValueAnimator.INFINITE; repeatMode = ValueAnimator.REVERSE; interpolator = AccelerateDecelerateInterpolator()
         })
-        if (currentScreen != "locked") header.addView(TextView(this).apply { text = "⚙️"; textSize = 24f; setOnClickListener { showSettingsDialog() } })
+        header.addView(crown)
+        header.addView(TextView(this).apply {
+            text = "KEYKEEP"; textSize = fs(24f); setTextColor(AppConfig.GOLD_PRIMARY); typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+            letterSpacing = 0.1f; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
+        })
+        if (currentScreen != "locked") header.addView(iconButton("⚙️", tr("الإعدادات", "Settings"), 24f) { showSettingsDialog() })
         container.addView(header)
 
         when (currentScreen) {
@@ -721,61 +1115,118 @@ class MainActivity : Activity() {
             "open" -> buildOpen(container)
             "view" -> buildView(container)
         }
-        rootContainer.removeAllViews(); rootContainer.addView(root)
+        contentHolder.removeAllViews(); contentHolder.addView(root)
+
+        if (animateNow) {
+            val dir = if (arabic) -1 else 1
+            scrollView.translationX = (if (forward) dir else -dir) * dp(60).toFloat(); scrollView.alpha = 0f
+            scrollView.animate().translationX(0f).alpha(1f).setDuration(240).setInterpolator(DecelerateInterpolator()).start()
+            for (i in 1 until container.childCount) {
+                val ch = container.getChildAt(i); ch.alpha = 0f; ch.translationY = dp(22).toFloat()
+                ch.animate().alpha(1f).translationY(0f).setDuration(320).setStartDelay(minOf(i, 9) * 55L).setInterpolator(DecelerateInterpolator()).start()
+            }
+        }
     }
 
     private fun buildLocked(parent: LinearLayout) {
         val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = luxuryBg(AppConfig.CARD_DARK, 16, 1, AppConfig.BORDER); setPadding(dp(32), dp(48), dp(32), dp(48))
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; background = luxuryBg(AppConfig.CARD_DARK, 16, 1, AppConfig.BORDER); setPadding(dp(32), dp(48), dp(32), dp(48))
         }
-        card.addView(TextView(this).apply { text = "🔐"; textSize = 64f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
-        card.addView(TextView(this).apply { text = "التطبيق مقفل"; setTextColor(AppConfig.TEXT_WHITE); textSize = 18f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(24)) })
-        card.addView(goldButton("فتح ببصمة / رمز الجهاز", 52).apply { setOnClickListener { requestDeviceAuth() } })
+        card.addView(TextView(this).apply { text = "🔐"; textSize = fs(64f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
+        card.addView(TextView(this).apply { text = tr("التطبيق مقفل", "App locked"); setTextColor(AppConfig.TEXT_MAIN); textSize = fs(18f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(24)) })
+        card.addView(goldButton(tr("فتح ببصمة / رمز الجهاز", "Unlock with biometrics / PIN"), 52).apply { setOnClickListener { requestDeviceAuth() } })
         parent.addView(card)
     }
 
+    // ---------------------------------------------------------- dashboard
     private fun buildDashboard(parent: LinearLayout) {
+        val sub = TextView(this).apply { setTextColor(AppConfig.TEXT_MUTED); textSize = fs(13f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) }
+        val subText = tr("خزنتك الملكية بين يديك", "Your royal vault, in your hands")
+        if (animateNow) ValueAnimator.ofInt(0, subText.length).apply {
+            duration = subText.length * 45L; interpolator = LinearInterpolator()
+            addUpdateListener { sub.text = subText.substring(0, it.animatedValue as Int) }; start()
+        } else sub.text = subText
+        parent.addView(sub)
+
         val statsCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 16, 1, AppConfig.BORDER)
-            setPadding(dp(20), dp(20), dp(20), dp(20)); layoutParams = lp(bottom = 24)
+            setPadding(dp(20), dp(20), dp(20), dp(20)); layoutParams = lp(bottom = 20)
         }
-        statsCard.addView(TextView(this).apply { text = "لوحة التحكم الملكية"; setTextColor(AppConfig.GOLD_PRIMARY); textSize = 16f; typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
+        statsCard.addView(TextView(this).apply { text = tr("لوحة التحكم الملكية", "Royal dashboard"); setTextColor(AppConfig.GOLD_PRIMARY); textSize = fs(16f); typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
         val row1 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        row1.addView(createStatBox("الخزائن", VaultStore.vaultCount.toString()))
-        row1.addView(createStatBox("المرفقات", VaultStore.attachmentCount.toString()))
+        row1.addView(createStatBox(tr("الخزائن", "Vaults"), VaultStore.vaultCount))
+        row1.addView(createStatBox(tr("المرفقات", "Attachments"), VaultStore.attachmentCount))
         statsCard.addView(row1)
-        statsCard.addView(TextView(this).apply { text = "المساحة المستخدمة: ${formatSize(VaultStore.usedSpace)}"; setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(4)) })
-        statsCard.addView(TextView(this).apply { text = "آخر نشاط: ${VaultStore.lastActivity}"; setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; gravity = Gravity.CENTER })
+        statsCard.addView(TextView(this).apply { text = tr("المساحة المستخدمة: ", "Space used: ") + formatSize(VaultStore.usedSpace); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER; setPadding(0, dp(12), 0, dp(4)) })
+        statsCard.addView(TextView(this).apply { text = tr("آخر نشاط: ", "Last activity: ") + VaultStore.lastActivity.ifEmpty { tr("لا يوجد", "none") }; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER })
         parent.addView(statsCard)
 
-        parent.addView(goldButton("إنشاء خزنة جديدة").apply {
-            layoutParams = lp(h = dp(56), bottom = 16)
-            setOnClickListener { wipeDrafts(); currentScreen = "create"; renderUI() }
-        })
-        parent.addView(outlineButton("فتح خزنة موجودة", 56).apply { setOnClickListener { currentScreen = "open"; renderUI() } })
+        val create = goldButton(tr("إنشاء خزنة جديدة", "Create new vault")).apply { setOnClickListener { wipeDrafts(); currentScreen = "create"; renderUI() } }
+        parent.addView(glowWrap(create, 14))
+        parent.addView(outlineButton(tr("فتح خزنة موجودة", "Open existing vault"), 56).apply { setOnClickListener { currentScreen = "open"; renderUI() } })
 
+        val tips = listOf(
+            tr("استخدم عبارة مرور طويلة بدل كلمة قصيرة معقّدة.", "Prefer a long passphrase over a short complex password."),
+            tr("لا تحفظ كلمة مرور الخزنة في نفس مكان ملفها.", "Never store the vault password next to its file."),
+            tr("فعّل قفل التطبيق ببصمة الجهاز من الإعدادات.", "Turn on biometric app lock in Settings."),
+            tr("الملف المشفر آمن للنسخ الاحتياطي في أي مكان.", "The encrypted file is safe to back up anywhere."),
+            tr("إذا نسيت المفتاح فلا يمكن استرجاع الخزنة أبداً.", "If you forget the key, the vault cannot be recovered.")
+        )
         parent.addView(TextView(this).apply {
-            text = "🛡 AES-256-GCM  •  PBKDF2 × 600,000  •  بدون إنترنت  •  بدون سيرفرات"
-            setTextColor(AppConfig.TEXT_MUTED); textSize = 11f; gravity = Gravity.CENTER; setPadding(0, dp(24), 0, 0)
+            text = "💡 " + tips[rng.nextInt(tips.size)]; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER; setPadding(dp(8), dp(24), dp(8), 0)
+        })
+        parent.addView(TextView(this).apply {
+            text = "AES-256-GCM  •  PBKDF2 × 600,000  •  " + tr("بدون إنترنت", "offline"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(11f); gravity = Gravity.CENTER; setPadding(0, dp(10), 0, 0)
         })
     }
 
-    private fun createStatBox(label: String, value: String) = LinearLayout(this).apply {
+    private fun glowWrap(inner: View, bottom: Int): View {
+        val w = FrameLayout(this).apply { layoutParams = lp(bottom = bottom); setPadding(dp(3), dp(3), dp(3), dp(3)) }
+        if (effectsOn()) {
+            val glow = View(this).apply {
+                background = GradientDrawable().apply { setColor(Color.TRANSPARENT); cornerRadius = dp(15).toFloat(); setStroke(dp(2), AppConfig.GOLD_PRIMARY) }; alpha = 0.1f
+            }
+            w.addView(glow, FrameLayout.LayoutParams(MATCH, MATCH).apply { setMargins(-dp(3), -dp(3), -dp(3), -dp(3)) })
+            bindAnim(glow, ObjectAnimator.ofFloat(glow, "alpha", 0.1f, 0.9f).apply { duration = 1300; repeatCount = ValueAnimator.INFINITE; repeatMode = ValueAnimator.REVERSE })
+        }
+        w.addView(inner, FrameLayout.LayoutParams(MATCH, dp(56)))
+        return w
+    }
+
+    private fun createStatBox(label: String, value: Int) = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
-        addView(TextView(this@MainActivity).apply { text = value; textSize = 28f; setTextColor(AppConfig.GOLD_LIGHT); typeface = Typeface.DEFAULT_BOLD })
-        addView(TextView(this@MainActivity).apply { text = label; textSize = 12f; setTextColor(AppConfig.TEXT_MUTED) })
+        val num = TextView(this@MainActivity).apply { text = value.toString(); textSize = fs(28f); setTextColor(AppConfig.GOLD_LIGHT); typeface = Typeface.DEFAULT_BOLD }
+        if (animateNow && value > 0) ValueAnimator.ofInt(0, value).apply { duration = 900; addUpdateListener { num.text = (it.animatedValue as Int).toString() }; start() }
+        addView(num)
+        addView(TextView(this@MainActivity).apply { text = label; textSize = fs(12f); setTextColor(AppConfig.TEXT_MUTED) })
     }
 
     // ---------------------------------------------------------- create
     private fun valuesFor(type: String) = fieldValues.getOrPut(type) { mutableMapOf() }
 
+    private fun effectiveExpiry(): Long {
+        val day = 24L * 3600 * 1000; val now = System.currentTimeMillis()
+        return when (expiryChoice) { 1 -> now + day; 2 -> now + 7 * day; 3 -> now + 30 * day; 4 -> now + 365 * day; 5 -> draftExpiry; else -> 0L }
+    }
+    private fun expiryText(): String {
+        val e = effectiveExpiry()
+        return if (e == 0L) "" else tr("تنتهي صلاحية الخزنة في: ", "Vault expires: ") + SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(e))
+    }
+
     private fun buildCreate(parent: LinearLayout) {
         val spec = AppConfig.spec(selectedVaultType)
         parent.addView(createBackButton())
-        parent.addView(createLabel("نوع البيانات"))
+
+        parent.addView(createLabel(tr("عنوان الخزنة (اختياري)", "Vault title (optional)")))
+        parent.addView(createLuxuryInput(tr("مثال: حساب البنك", "e.g. Bank account"), false).apply { setText(draftTitle); watch { draftTitle = it } })
+        parent.addView(CheckBox(this).apply {
+            text = tr("استخدام العنوان في اسم الملف (يراه كل من يرى الملف)", "Use title in file name (visible to anyone who sees the file)")
+            setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); isChecked = useTitleInFile; setOnCheckedChangeListener { _, c -> useTitleInFile = c }
+        })
+
+        parent.addView(createLabel(tr("نوع البيانات", "Data type")))
         parent.addView(Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, AppConfig.VAULTS.map { it.title })
+            adapter = themedAdapter(AppConfig.VAULTS.map { it.title })
             setSelection(AppConfig.VAULTS.indexOfFirst { it.type == selectedVaultType }.coerceAtLeast(0), false)
             background = luxuryBg(AppConfig.CARD_DARK, 8, 1, AppConfig.BORDER)
             onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -791,125 +1242,176 @@ class MainActivity : Activity() {
             val values = valuesFor(spec.type)
             for (f in spec.fields) {
                 parent.addView(createLabel(f.label))
-                if (f.secret) {
-                    parent.addView(secretInput(f.label, values[f.label] ?: "", f.numeric) { values[f.label] = it }.first)
-                } else {
-                    val et = createLuxuryInput(f.label, f.multiline)
-                    et.setText(values[f.label] ?: ""); et.watch { values[f.label] = it }
-                    parent.addView(et)
+                if (f.totp) parent.addView(TextView(this).apply {
+                    text = tr("الصق السر (Base32) أو رابط otpauth://", "Paste the secret (Base32) or an otpauth:// link"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(11f); setPadding(0, 0, 0, dp(6))
+                })
+                if (f.secret) parent.addView(secretInput(f.label, values[f.id] ?: "", f.numeric) { values[f.id] = it }.first)
+                else {
+                    val et = createLuxuryInput(f.label, f.multiline); et.setText(values[f.id] ?: ""); et.watch { values[f.id] = it }; parent.addView(et)
                 }
             }
         }
 
         if (spec.allowMedia) buildMediaSection(parent)
 
-        // ---- encryption key
-        parent.addView(createLabel("مفتاح التشفير"))
-        val strengthBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; progress = 0; layoutParams = lp(h = dp(4), top = 6)
-        }
-        val strengthLabel = TextView(this).apply { textSize = 12f; setTextColor(AppConfig.TEXT_MUTED); setPadding(0, dp(4), 0, 0) }
+        // ---- expiry
+        parent.addView(createLabel(tr("صلاحية الخزنة", "Vault validity")))
+        val expiryNote = TextView(this).apply { setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); setPadding(0, dp(6), 0, 0); text = expiryText() }
+        parent.addView(Spinner(this).apply {
+            adapter = themedAdapter(listOf(tr("بدون انتهاء", "No expiry"), tr("24 ساعة", "24 hours"), tr("أسبوع", "1 week"), tr("شهر", "1 month"), tr("سنة", "1 year"), tr("تاريخ محدد…", "Pick a date…")))
+            setSelection(expiryChoice, false); background = luxuryBg(AppConfig.CARD_DARK, 8, 1, AppConfig.BORDER)
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, p3: Long) {
+                    if (pos == expiryChoice) return
+                    if (pos == 5) {
+                        val cal = Calendar.getInstance()
+                        DatePickerDialog(this@MainActivity, { _, y, m, d ->
+                            draftExpiry = Calendar.getInstance().apply { set(y, m, d, 23, 59, 59) }.timeInMillis
+                            expiryChoice = 5; expiryNote.text = expiryText()
+                        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).apply {
+                            datePicker.minDate = System.currentTimeMillis()
+                            setOnCancelListener { parent.post { renderUI() } }
+                        }.show()
+                    } else { expiryChoice = pos; expiryNote.text = expiryText() }
+                }
+                override fun onNothingSelected(p0: AdapterView<*>?) {}
+            }
+        })
+        parent.addView(expiryNote)
+        parent.addView(TextView(this).apply {
+            text = tr("ملاحظة: الانتهاء يمنع العرض في صفحة HTML، لكنه ليس حماية تشفيرية — من يملك المفتاح يستطيع فك الملف بأدوات أخرى.", "Note: expiry blocks viewing in the HTML page, but it is not cryptographic protection — anyone with the key can decrypt with other tools.")
+            setTextColor(AppConfig.TEXT_MUTED); textSize = fs(10f); setPadding(0, dp(4), 0, 0)
+        })
+
+        // ---- key
+        parent.addView(createLabel(tr("مفتاح التشفير", "Encryption key")))
+        val strengthBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; progress = 0; layoutParams = lp(h = dp(4), top = 6) }
+        val strengthLabel = TextView(this).apply { textSize = fs(12f); setTextColor(AppConfig.TEXT_MUTED); setPadding(0, dp(4), 0, 0) }
         fun updateStrength(p: String) {
             val s = strengthOf(p)
             val (label, color) = when {
                 p.isEmpty() -> Pair("", AppConfig.TEXT_MUTED)
-                s < 40 -> Pair("ضعيفة", AppConfig.DANGER_RED)
-                s < 65 -> Pair("متوسطة", AppConfig.WARN_ORANGE)
-                s < 85 -> Pair("قوية", AppConfig.GOLD_PRIMARY)
-                else -> Pair("ممتازة", AppConfig.OK_GREEN)
+                s < 40 -> Pair(tr("ضعيفة", "Weak"), AppConfig.DANGER_RED)
+                s < 65 -> Pair(tr("متوسطة", "Fair"), AppConfig.WARN_ORANGE)
+                s < 85 -> Pair(tr("قوية", "Strong"), AppConfig.GOLD_PRIMARY)
+                else -> Pair(tr("ممتازة", "Excellent"), AppConfig.OK_GREEN)
             }
-            strengthBar.progress = s; strengthBar.progressTintList = ColorStateList.valueOf(color)
-            strengthLabel.text = if (label.isEmpty()) "" else "القوة: $label"; strengthLabel.setTextColor(color)
+            animateStrength(strengthBar, strengthLabel, s, color, if (label.isEmpty()) "" else tr("القوة: ", "Strength: ") + label)
         }
-
-        val (passRow, passEt) = secretInput("كلمة مرور قوية", draftPass) { draftPass = it; updateStrength(it) }
+        val (passRow, passEt) = secretInput(tr("كلمة مرور قوية", "Strong password"), draftPass) { draftPass = it; updateStrength(it) }
         parent.addView(passRow); parent.addView(strengthBar); parent.addView(strengthLabel)
         updateStrength(draftPass)
 
-        parent.addView(createLabel("تأكيد المفتاح"))
-        val (confirmRow, confirmEt) = secretInput("أعد كتابة كلمة المرور", draftPassConfirm) { draftPassConfirm = it }
+        parent.addView(createLabel(tr("تأكيد المفتاح", "Confirm key")))
+        val (confirmRow, confirmEt) = secretInput(tr("أعد كتابة كلمة المرور", "Re-enter password"), draftPassConfirm) { draftPassConfirm = it }
         parent.addView(confirmRow)
 
         parent.addView(Button(this).apply {
-            text = "🎲 مولّد كلمات المرور"; setTextColor(AppConfig.TEXT_MUTED); textSize = 13f; background = null; isAllCaps = false
+            text = tr("🎲 مولّد كلمات المرور / العبارات", "🎲 Password / passphrase generator"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(13f); background = null; isAllCaps = false; minHeight = dp(48)
             setOnClickListener {
                 showGeneratorDialog { pw ->
-                    passEt.setText(pw); confirmEt.setText(pw)
-                    setVisible(passEt, true, false); setVisible(confirmEt, true, false)
-                    toast("تم استخدام كلمة المرور — احفظها في مكان آمن")
+                    passEt.setText(pw); confirmEt.setText(pw); setVisible(passEt, true, false); setVisible(confirmEt, true, false)
+                    toast(tr("تم استخدام كلمة المرور — احفظها في مكان آمن", "Password applied — store it somewhere safe"))
                 }
             }
         })
+        parent.addView(TextView(this).apply { text = tr("تذكير: لا يمكن استرجاع الخزنة إذا نسيت المفتاح", "Reminder: the vault cannot be recovered if you forget the key"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(11f) })
 
-        parent.addView(createLabel("تذكير: لا يمكن استرجاع الخزنة إذا نسيت المفتاح").apply { setTextColor(AppConfig.TEXT_MUTED); textSize = 11f })
+        parent.addView(goldButton(tr("🔒 تشفير وحفظ الملف", "🔒 Encrypt & save file")).apply { layoutParams = lp(h = dp(56), top = 16); setOnClickListener { onEncryptClicked(spec, Out.SAVE) } })
+        parent.addView(outlineButton(tr("📤 تشفير ومشاركة", "📤 Encrypt & share"), 52).apply { layoutParams = lp(h = dp(52), top = 10); setOnClickListener { onEncryptClicked(spec, Out.SHARE) } })
+    }
 
-        parent.addView(goldButton("🔒 تشفير وحفظ الملف").apply {
-            layoutParams = lp(h = dp(56), top = 16)
-            setOnClickListener { onEncryptClicked(spec) }
-        })
+    private fun animateStrength(bar: ProgressBar, label: TextView, p: Int, color: Int, text: String) {
+        label.text = text
+        val from = (bar.tag as? Int) ?: AppConfig.TEXT_MUTED
+        bar.tag = color
+        if (!effectsOn()) { bar.progress = p; bar.progressTintList = ColorStateList.valueOf(color); label.setTextColor(color); return }
+        ObjectAnimator.ofInt(bar, "progress", p).setDuration(300).start()
+        ValueAnimator.ofObject(ArgbEvaluator(), from, color).apply {
+            duration = 300
+            addUpdateListener { val cc = it.animatedValue as Int; bar.progressTintList = ColorStateList.valueOf(cc); label.setTextColor(cc) }
+            start()
+        }
     }
 
     private fun buildCustomRows(parent: LinearLayout) {
         customRows.forEachIndexed { i, r ->
             val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 10, 1, AppConfig.BORDER)
-                setPadding(dp(12), dp(10), dp(12), dp(10)); layoutParams = lp(top = 12)
+                orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 10, 1, AppConfig.BORDER); setPadding(dp(12), dp(10), dp(12), dp(10)); layoutParams = lp(top = 12)
             }
             val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            val nameEt = createLuxuryInput("اسم الحقل", false).apply { setText(r.name); watch { r.name = it }; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f) }
-            top.addView(nameEt)
-            if (customRows.size > 1) top.addView(TextView(this).apply {
-                text = "✖"; setTextColor(AppConfig.DANGER_RED); setPadding(dp(14), 0, dp(4), 0)
-                setOnClickListener { customRows.removeAt(i); renderUI() }
-            })
+            top.addView(createLuxuryInput(tr("اسم الحقل", "Field name"), false).apply { setText(r.name); watch { r.name = it }; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f) })
+            if (customRows.size > 1) top.addView(iconButton("✖", tr("حذف الحقل", "Remove field")) { customRows.removeAt(i); renderUI() }.apply { setTextColor(AppConfig.DANGER_RED) })
             card.addView(top)
-            card.addView(createLuxuryInput("القيمة", true).apply { setText(r.value); watch { r.value = it }; layoutParams = lp(top = 8) })
+            card.addView(createLuxuryInput(tr("القيمة", "Value"), true).apply { setText(r.value); watch { r.value = it }; layoutParams = lp(top = 8) })
             card.addView(CheckBox(this).apply {
-                text = "حقل سري (يُخفى عند العرض)"; setTextColor(AppConfig.TEXT_MUTED); isChecked = r.secret
-                setOnCheckedChangeListener { _: CompoundButton, c: Boolean -> r.secret = c }
+                text = tr("حقل سري (يُخفى عند العرض)", "Secret field (hidden when viewing)"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(13f); isChecked = r.secret
+                setOnCheckedChangeListener { _, c -> r.secret = c }
             })
             parent.addView(card)
         }
-        parent.addView(outlineButton("＋ إضافة حقل").apply { layoutParams = lp(h = dp(44), top = 12); setOnClickListener { customRows.add(CustomRow()); renderUI() } })
+        parent.addView(outlineButton(tr("＋ إضافة حقل", "+ Add field")).apply { layoutParams = lp(h = dp(48), top = 12); setOnClickListener { customRows.add(CustomRow()); renderUI() } })
     }
 
     private fun buildMediaSection(parent: LinearLayout) {
-        parent.addView(outlineButton("📎 إرفاق مستندات / صور").apply {
+        parent.addView(outlineButton(tr("📎 إرفاق مستندات / صور", "📎 Attach documents / images")).apply {
             layoutParams = lp(h = dp(48), top = 12)
             setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE); type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                }
-                suppressLockOnce = true
-                @Suppress("DEPRECATION") startActivityForResult(intent, REQ_ATTACH)
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) }
+                launchForResult(intent) { code, data -> if (code == RESULT_OK && data != null) attachFromIntent(data) }
             }
         })
         val total = mediaItems.sumOf { it.optLong("size", 0L) }
         parent.addView(TextView(this).apply {
-            text = "الحد: ${formatSize(MAX_FILE_BYTES)} للملف، ${formatSize(MAX_TOTAL_BYTES)} إجمالاً  •  المرفق الآن: ${formatSize(total)}"
-            setTextColor(AppConfig.TEXT_MUTED); textSize = 11f; setPadding(0, dp(6), 0, dp(6))
+            text = tr("الحد: ", "Limit: ") + formatSize(MAX_FILE_BYTES) + tr(" للملف، ", " per file, ") + formatSize(MAX_TOTAL_BYTES) + tr(" إجمالاً  •  المرفق الآن: ", " total  •  attached: ") + formatSize(total)
+            setTextColor(AppConfig.TEXT_MUTED); textSize = fs(11f); setPadding(0, dp(6), 0, dp(6))
         })
         for ((i, item) in mediaItems.withIndex()) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL; background = luxuryBg(AppConfig.CARD_DARK, 8)
-                setPadding(dp(12), dp(8), dp(12), dp(8)); gravity = Gravity.CENTER_VERTICAL; layoutParams = lp(bottom = 6)
-            }
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; background = luxuryBg(AppConfig.CARD_DARK, 8); setPadding(dp(12), dp(4), dp(4), dp(4)); gravity = Gravity.CENTER_VERTICAL; layoutParams = lp(bottom = 6) }
             row.addView(TextView(this).apply { text = if (item.optString("kind") == "image") "🖼" else "📎"; setPadding(0, 0, dp(10), 0) })
-            row.addView(TextView(this).apply {
-                text = "${item.optString("name")}  (${formatSize(item.optLong("size", 0L))})"
-                setTextColor(AppConfig.TEXT_WHITE); textSize = 14f; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
-            })
-            row.addView(TextView(this).apply { text = "✖"; setTextColor(AppConfig.DANGER_RED); setOnClickListener { mediaItems.removeAt(i); renderUI() } })
+            row.addView(TextView(this).apply { text = "${item.optString("name")}  (${formatSize(item.optLong("size", 0L))})"; setTextColor(AppConfig.TEXT_MAIN); textSize = fs(14f); layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f) })
+            row.addView(iconButton("✖", tr("إزالة المرفق", "Remove attachment")) { mediaItems.removeAt(i); renderUI() }.apply { setTextColor(AppConfig.DANGER_RED) })
             parent.addView(row)
         }
     }
 
-    private fun collectData(spec: VaultSpec): Pair<LinkedHashMap<String, String>, List<String>> {
-        val data = LinkedHashMap<String, String>(); val secrets = mutableListOf<String>()
+    private fun attachFromIntent(data: Intent) {
+        val uris = mutableListOf<Uri>()
+        val clip = data.clipData
+        if (clip != null) { for (i in 0 until clip.itemCount) uris.add(clip.getItemAt(i).uri) } else data.data?.let { uris.add(it) }
+        val base = mediaItems.sumOf { it.optLong("size", 0L) }
+        val busy = showBusy(tr("جاري قراءة المرفقات...", "Reading attachments..."))
+        Thread {
+            var total = base; var skipped = 0
+            val added = mutableListOf<JSONObject>()
+            for (uri in uris) {
+                try {
+                    val (name, declared) = queryMeta(uri)
+                    if (declared > MAX_FILE_BYTES || (declared > 0 && total + declared > MAX_TOTAL_BYTES)) { skipped++; continue }
+                    val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: continue
+                    if (bytes.size > MAX_FILE_BYTES || total + bytes.size > MAX_TOTAL_BYTES) { skipped++; continue }
+                    val mime = contentResolver.getType(uri) ?: "application/octet-stream"
+                    total += bytes.size
+                    added.add(JSONObject().apply {
+                        put("kind", if (mime.startsWith("image/")) "image" else "file"); put("mime", mime); put("name", name)
+                        put("size", bytes.size.toLong()); put("data", Base64.encodeToString(bytes, Base64.NO_WRAP))
+                    })
+                } catch (e: Throwable) { skipped++ }
+            }
+            runOnUiThread {
+                busy.dismiss(); mediaItems.addAll(added)
+                if (skipped > 0) toast(tr("تم تجاهل $skipped ملف (حجم كبير أو خطأ قراءة)", "$skipped file(s) skipped (too large or unreadable)"), true)
+                renderUI()
+            }
+        }.start()
+    }
+
+    private fun collectData(spec: VaultSpec): Collected {
+        val data = LinkedHashMap<String, String>(); val secrets = mutableListOf<String>(); val totps = mutableListOf<String>()
         if (spec.dynamic) {
             customRows.forEachIndexed { i, r ->
                 if (r.value.isBlank()) return@forEachIndexed
-                val base = r.name.trim().ifEmpty { "حقل ${i + 1}" }
+                val base = r.name.trim().ifEmpty { tr("حقل ", "Field ") + (i + 1) }
                 var name = base; var n = 2
                 while (data.containsKey(name)) { name = "$base ($n)"; n++ }
                 data[name] = r.value; if (r.secret) secrets.add(name)
@@ -917,54 +1419,139 @@ class MainActivity : Activity() {
         } else {
             val values = valuesFor(spec.type)
             for (f in spec.fields) {
-                val raw = values[f.label].orEmpty()
-                if (raw.isBlank()) continue
+                val raw = values[f.id].orEmpty(); if (raw.isBlank()) continue
                 data[f.label] = if (f.secret) raw else raw.trim()
-                if (f.secret) secrets.add(f.label)
+                if (f.secret) secrets.add(f.label); if (f.totp) totps.add(f.label)
             }
         }
-        return Pair(data, secrets)
+        return Collected(data, secrets, totps)
     }
 
-    private fun onEncryptClicked(spec: VaultSpec) {
+    private fun onEncryptClicked(spec: VaultSpec, out: Out) {
         val pass = draftPass
-        if (pass.length < 8) { toast("كلمة المرور يجب ألا تقل عن 8 أحرف"); return }
-        if (pass != draftPassConfirm) { toast("المفاتيح غير متطابقة"); return }
-        val (data, secrets) = collectData(spec)
-        if (data.isEmpty() && mediaItems.isEmpty()) { toast("الخزنة فارغة"); return }
+        if (pass.length < 8) { toast(tr("كلمة المرور يجب ألا تقل عن 8 أحرف", "Password must be at least 8 characters")); return }
+        if (pass != draftPassConfirm) { toast(tr("المفاتيح غير متطابقة", "Keys do not match")); return }
+        val col = collectData(spec)
+        if (col.data.isEmpty() && mediaItems.isEmpty()) { toast(tr("الخزنة فارغة", "Vault is empty")); return }
+        for (l in col.totps) if (TotpEngine.parse(col.data[l].orEmpty()) == null) {
+            toast(tr("سر المصادقة غير صالح (Base32 أو رابط otpauth)", "Invalid 2FA secret (Base32 or otpauth link)"), true); return
+        }
         if (strengthOf(pass) < 50) {
-            AlertDialog.Builder(this).setTitle("كلمة مرور ضعيفة")
-                .setMessage("قوة التشفير تعتمد على قوة كلمة المرور. يُنصح باستخدام المولّد. هل تريد المتابعة؟")
-                .setPositiveButton("متابعة") { _, _ -> encryptAndSave(spec, data, secrets, pass) }
-                .setNegativeButton("تعديل", null).show()
-        } else encryptAndSave(spec, data, secrets, pass)
+            dialogBuilder().setTitle(tr("كلمة مرور ضعيفة", "Weak password"))
+                .setMessage(tr("قوة التشفير تعتمد على قوة كلمة المرور. يُنصح باستخدام المولّد. هل تريد المتابعة؟", "Encryption is only as strong as the password. Using the generator is recommended. Continue?"))
+                .setPositiveButton(tr("متابعة", "Continue")) { _, _ -> encryptAndOutput(spec, col, pass, out) }
+                .setNegativeButton(tr("تعديل", "Edit"), null).show().also { secureDialog(it) }
+        } else encryptAndOutput(spec, col, pass, out)
     }
 
-    private fun encryptAndSave(spec: VaultSpec, data: Map<String, String>, secrets: List<String>, pass: String) {
-        toast("جاري التشفير...")
-        val snapshot = ArrayList(mediaItems)
+    private fun showProgress(title: String): ProgressUi {
+        val l = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(16), dp(24), dp(8)) }
+        val stage = TextView(this).apply { setTextColor(AppConfig.TEXT_MAIN); textSize = fs(14f); setPadding(0, 0, 0, dp(10)) }
+        val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100; progress = 0; progressTintList = ColorStateList.valueOf(AppConfig.GOLD_PRIMARY) }
+        val pct = TextView(this).apply { text = "0%"; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.END }
+        l.addView(stage); l.addView(bar); l.addView(pct)
+        val d = dialogBuilder().setTitle(title).setView(l).setCancelable(false).create(); d.show(); secureDialog(d)
+        return ProgressUi(d, bar, pct, stage)
+    }
+
+    private fun progressTo(ui: ProgressUi, target: Int, ms: Long, stageText: String) {
+        ui.stage.text = stageText; ui.anim?.cancel()
+        if (!effectsOn()) { ui.bar.progress = target; ui.pct.text = "$target%"; return }
+        ui.anim = ValueAnimator.ofInt(ui.bar.progress, target).apply {
+            duration = ms; interpolator = DecelerateInterpolator()
+            addUpdateListener { val v = it.animatedValue as Int; ui.bar.progress = v; ui.pct.text = "$v%" }; start()
+        }
+    }
+
+    private fun showBusy(text: String): AlertDialog {
+        val l = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(24), dp(20), dp(24), dp(20)) }
+        l.addView(ProgressBar(this))
+        l.addView(TextView(this).apply { this.text = text; setTextColor(AppConfig.TEXT_MAIN); textSize = fs(15f); setPadding(dp(16), 0, 0, 0) })
+        val d = dialogBuilder().setView(l).setCancelable(false).create(); d.show(); secureDialog(d); return d
+    }
+
+    private fun fileNameFor(spec: VaultSpec): String {
+        val tag = UUID.randomUUID().toString().take(4)
+        val safe = draftTitle.trim().replace(Regex("[^\\p{L}\\p{N}_-]+"), "_").trim('_').take(40)
+        return if (useTitleInFile && safe.isNotEmpty()) "${safe}_$tag.html" else "Keykeep_${spec.type}_$tag.html"
+    }
+
+    private fun encryptAndOutput(spec: VaultSpec, col: Collected, pass: String, out: Out) {
+        val payload = VaultPayload(spec.type, draftTitle.trim(), effectiveExpiry(), col.data, col.secrets, col.totps, ArrayList(mediaItems))
+        val fileName = fileNameFor(spec)
+        val attachCount = mediaItems.size
+        val ui = showProgress(tr("جاري التشفير", "Encrypting"))
+        progressTo(ui, 8, 200, tr("تجهيز البيانات...", "Preparing data..."))
+        val arabic = VaultStore.isArabic(); val theme = AppConfig.theme
         Thread {
             try {
-                val html = CryptoEngine.generateVault(spec.type, data, secrets, pass.toCharArray(), snapshot)
-                runOnUiThread {
-                    pendingSaveHtml = html
-                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE); type = "text/html"
-                        putExtra(Intent.EXTRA_TITLE, "Keykeep_${spec.type}_${UUID.randomUUID().toString().take(4)}.html")
+                val html = CryptoEngine.generateVault(payload, pass.toCharArray(), theme, arabic) { p ->
+                    runOnUiThread {
+                        when (p) {
+                            30 -> progressTo(ui, 86, 2600, tr("اشتقاق المفتاح (PBKDF2 × 600,000)...", "Deriving key (PBKDF2 × 600,000)..."))
+                            90 -> progressTo(ui, 94, 150, tr("تشفير البيانات...", "Encrypting data..."))
+                            100 -> progressTo(ui, 100, 150, tr("بناء الملف...", "Building file..."))
+                        }
                     }
-                    suppressLockOnce = true
-                    @Suppress("DEPRECATION") startActivityForResult(intent, REQ_SAVE_VAULT)
+                }
+                runOnUiThread {
+                    ui.anim?.cancel(); ui.dlg.dismiss()
+                    if (out == Out.SAVE) saveVaultFile(html, fileName, pass, attachCount) else shareVaultFile(html, fileName, attachCount)
                 }
             } catch (e: Throwable) {
-                runOnUiThread { toast("خطأ: ${e.message ?: "ذاكرة غير كافية"}", true) }
+                runOnUiThread { ui.anim?.cancel(); ui.dlg.dismiss(); haptic(false); toast(tr("خطأ: ", "Error: ") + (e.message ?: "OOM"), true) }
             }
         }.start()
     }
 
+    private fun saveVaultFile(html: String, fileName: String, pass: String, attachCount: Int) {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "text/html"; putExtra(Intent.EXTRA_TITLE, fileName) }
+        launchForResult(intent) { code, d ->
+            val uri = d?.data
+            if (code != RESULT_OK || uri == null) return@launchForResult
+            try { contentResolver.openOutputStream(uri, "wt")?.use { it.write(html.toByteArray(Charsets.UTF_8)) } }
+            catch (e: Exception) { haptic(false); toast(tr("فشل الحفظ", "Save failed")); return@launchForResult }
+            VaultStore.addVaultStats(attachCount, html.length.toLong())
+            // improvement #4: read the file back and decrypt it to prove it is intact
+            val busy = showBusy(tr("جاري التحقق من سلامة الملف...", "Verifying the saved file..."))
+            Thread {
+                val ok = verifyFile(uri, pass)
+                runOnUiThread {
+                    busy.dismiss(); haptic(ok)
+                    toast(if (ok) tr("👑 تم الحفظ والتحقق من سلامة الملف ✔", "👑 Saved & verified ✔") else tr("⚠️ تم الحفظ لكن فشل التحقق — أعد إنشاء الخزنة", "⚠️ Saved but verification failed — recreate the vault"), true)
+                    wipeDrafts(); currentScreen = "home"; renderUI()
+                }
+            }.start()
+        }
+    }
+
+    private fun verifyFile(uri: Uri, pass: String): Boolean {
+        return try {
+            val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return false
+            val parsed = CryptoEngine.parseHtml(String(bytes, Charsets.UTF_8)) ?: return false
+            CryptoEngine.decryptVault(parsed, pass.toCharArray()) != null
+        } catch (e: Throwable) { false }
+    }
+
+    private fun shareVaultFile(html: String, fileName: String, attachCount: Int) {
+        try {
+            val dir = File(cacheDir, "shared").apply { mkdirs() }
+            val f = File(dir, fileName); f.writeText(html, Charsets.UTF_8)
+            val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", f)
+            val send = Intent(Intent.ACTION_SEND).apply { type = "text/html"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            suppressLockOnce = true
+            startActivity(Intent.createChooser(send, tr("مشاركة الخزنة المشفرة", "Share encrypted vault")))
+            VaultStore.addVaultStats(attachCount, html.length.toLong()); haptic(true)
+            wipeDrafts(); currentScreen = "home"; renderUI()
+        } catch (e: Exception) { haptic(false); toast(tr("فشلت المشاركة: ", "Share failed: ") + e.message, true) }
+    }
+
+    private fun cleanShareCache() { try { File(cacheDir, "shared").listFiles()?.forEach { it.delete() } } catch (e: Exception) {} }
+
+    // ---------------------------------------------------------- generators
     private fun strengthOf(p: String): Int {
         if (p.isEmpty()) return 0
-        var s = minOf(p.length, 20) * 3
-        var classes = 0
+        var s = minOf(p.length, 20) * 3; var classes = 0
         if (p.any { it.isLowerCase() }) classes++
         if (p.any { it.isUpperCase() }) classes++
         if (p.any { it.isDigit() }) classes++
@@ -980,330 +1567,101 @@ class MainActivity : Activity() {
     private fun generatePassword(len: Int, symbols: Boolean): String {
         val sets = mutableListOf("ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789")
         if (symbols) sets.add("!@#%^&*-_=+?")
-        val all = sets.joinToString("")
-        val out = mutableListOf<Char>()
+        val all = sets.joinToString(""); val out = mutableListOf<Char>()
         sets.forEach { out.add(it[rng.nextInt(it.length)]) }
         while (out.size < len) out.add(all[rng.nextInt(all.length)])
-        out.shuffle(rng)
-        return out.joinToString("")
+        out.shuffle(rng); return out.joinToString("")
     }
 
-    private fun showGeneratorDialog(onUse: (String) -> Unit) {
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(12), dp(20), dp(4)) }
-        val preview = TextView(this).apply { textSize = 17f; typeface = Typeface.MONOSPACE; setTextColor(AppConfig.GOLD_LIGHT); setTextIsSelectable(true); setPadding(0, dp(8), 0, dp(8)) }
-        val lenLabel = TextView(this).apply { setTextColor(AppConfig.TEXT_WHITE) }
-        val seek = SeekBar(this).apply { max = 40; progress = 12 } // 8..48 -> default 20
-        val chkSym = CheckBox(this).apply { text = "رموز خاصة"; isChecked = true; setTextColor(AppConfig.TEXT_WHITE) }
-        var current = ""
-        fun regen() {
-            val len = seek.progress + 8
-            lenLabel.text = "الطول: $len"; current = generatePassword(len, chkSym.isChecked); preview.text = current
+    /** Pronounceable passphrase: CVCVC words (18*5*18*5*18 = 145,800 combos ≈ 17.2 bits per word). No wordlist needed. */
+    private fun generatePassphrase(words: Int, extras: Boolean): String {
+        val cons = "bcdfghjklmnprstvwz"; val vow = "aeiou"
+        val ws = (1..words).map {
+            val sb = StringBuilder()
+            sb.append(cons[rng.nextInt(cons.length)].uppercaseChar())
+            sb.append(vow[rng.nextInt(5)]); sb.append(cons[rng.nextInt(cons.length)])
+            sb.append(vow[rng.nextInt(5)]); sb.append(cons[rng.nextInt(cons.length)])
+            sb.toString()
         }
+        var out = ws.joinToString("-")
+        if (extras) out += "-" + (10 + rng.nextInt(90)) + "!@#%&*?"[rng.nextInt(7)]
+        return out
+    }
+
+    private fun log2(x: Double) = ln(x) / ln(2.0)
+
+    private fun showGeneratorDialog(onUse: (String) -> Unit) {
+        var phraseMode = false; var current = ""
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(12), dp(20), dp(4)) }
+        val group = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val rbRand = RadioButton(this).apply { text = tr("عشوائية", "Random"); setTextColor(AppConfig.TEXT_MAIN); id = View.generateViewId(); isChecked = true }
+        val rbPhrase = RadioButton(this).apply { text = tr("عبارة مرورية", "Passphrase"); setTextColor(AppConfig.TEXT_MAIN); id = View.generateViewId() }
+        group.addView(rbRand); group.addView(rbPhrase)
+        val preview = TextView(this).apply { textSize = fs(17f); typeface = Typeface.MONOSPACE; setTextColor(AppConfig.GOLD_LIGHT); setTextIsSelectable(true); setPadding(0, dp(8), 0, dp(4)) }
+        val entropy = TextView(this).apply { textSize = fs(12f); setTextColor(AppConfig.TEXT_MUTED); setPadding(0, 0, 0, dp(8)) }
+        val lenLabel = TextView(this).apply { setTextColor(AppConfig.TEXT_MAIN); textSize = fs(14f) }
+        val seek = SeekBar(this).apply { max = 40; progress = 12 }
+        val chk = CheckBox(this).apply { isChecked = true; setTextColor(AppConfig.TEXT_MAIN) }
+        fun regen() {
+            if (phraseMode) {
+                val w = seek.progress.coerceAtMost(5) + 3
+                lenLabel.text = tr("عدد الكلمات: $w", "Words: $w"); chk.text = tr("إضافة رقم ورمز", "Add number & symbol")
+                current = generatePassphrase(w, chk.isChecked)
+                entropy.text = "≈ " + (w * log2(145800.0) + if (chk.isChecked) log2(90.0 * 7) else 0.0).toInt() + " bits"
+            } else {
+                val len = seek.progress + 8
+                lenLabel.text = tr("الطول: $len", "Length: $len"); chk.text = tr("رموز خاصة", "Special characters")
+                current = generatePassword(len, chk.isChecked)
+                entropy.text = "≈ " + (len * log2(if (chk.isChecked) 69.0 else 57.0)).toInt() + " bits"
+            }
+            preview.text = current
+        }
+        fun configureSeek() { if (phraseMode) { seek.max = 5; seek.progress = 2 } else { seek.max = 40; seek.progress = 12 } }
+        group.setOnCheckedChangeListener { _, id -> phraseMode = id == rbPhrase.id; configureSeek(); regen() }
         seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) { regen() }
             override fun onStartTrackingTouch(sb: SeekBar?) {}
             override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
-        chkSym.setOnCheckedChangeListener { _, _ -> regen() }
-        layout.addView(preview); layout.addView(lenLabel); layout.addView(seek); layout.addView(chkSym)
-        layout.addView(Button(this).apply { text = "🔄 توليد جديد"; isAllCaps = false; setOnClickListener { regen() } })
+        chk.setOnCheckedChangeListener { _, _ -> regen() }
+        layout.addView(group); layout.addView(preview); layout.addView(entropy); layout.addView(lenLabel); layout.addView(seek); layout.addView(chk)
+        layout.addView(Button(this).apply { text = tr("🔄 توليد جديد", "🔄 Generate again"); isAllCaps = false; setOnClickListener { regen() } })
         regen()
-        AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
-            .setTitle("🎲 مولّد كلمات المرور").setView(layout)
-            .setPositiveButton("استخدام") { _, _ -> onUse(current) }
-            .setNegativeButton("إلغاء", null).show()
+        dialogBuilder().setTitle(tr("🎲 المولّد", "🎲 Generator")).setView(layout)
+            .setPositiveButton(tr("استخدام", "Use")) { _, _ -> onUse(current) }
+            .setNegativeButton(tr("إلغاء", "Cancel"), null).show().also { secureDialog(it) }
     }
 
     // ---------------------------------------------------------- open
     private fun buildOpen(parent: LinearLayout) {
         parent.addView(createBackButton())
         val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            background = luxuryBg(AppConfig.CARD_DARK, 16, 1, AppConfig.BORDER); setPadding(dp(32), dp(48), dp(32), dp(48))
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; background = luxuryBg(AppConfig.CARD_DARK, 16, 1, AppConfig.BORDER); setPadding(dp(32), dp(48), dp(32), dp(48))
         }
-        card.addView(TextView(this).apply { text = "📂"; textSize = 64f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
-        card.addView(TextView(this).apply { text = "اختر ملف الخزنة المشفرة (.html)"; setTextColor(AppConfig.TEXT_WHITE); textSize = 16f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(8)) })
-        card.addView(TextView(this).apply { text = "يدعم الملفات القديمة (v4) والجديدة (v5)"; setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(24)) })
-        card.addView(goldButton("تصفح الملفات", 48).apply {
+        card.addView(TextView(this).apply { text = "📂"; textSize = fs(64f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(16)) })
+        card.addView(TextView(this).apply { text = tr("اختر ملف الخزنة المشفرة (.html)", "Choose an encrypted vault file (.html)"); setTextColor(AppConfig.TEXT_MAIN); textSize = fs(16f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(8)) })
+        card.addView(TextView(this).apply { text = tr("يدعم الملفات القديمة (v4) والجديدة (v5)", "Supports old (v4) and new (v5) files"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(24)) })
+        card.addView(goldButton(tr("تصفح الملفات", "Browse files"), 48).apply {
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
-                suppressLockOnce = true
-                @Suppress("DEPRECATION") startActivityForResult(intent, REQ_OPEN)
+                launchForResult(intent) { code, d -> if (code == RESULT_OK) d?.data?.let { openVaultFile(it) } }
             }
         })
         parent.addView(card)
     }
 
-    private fun extractString(html: String, varName: String): String? =
-        Regex("""(?:var|const)\s+${Regex.escape(varName)}\s*=\s*["']([^"']*)["']""").find(html)?.groupValues?.get(1)
-
     private fun openVaultFile(uri: Uri) {
-        val remaining = VaultStore.lockRemainingMs()
-        if (remaining > 0) { toast("محاولات خاطئة كثيرة. انتظر ${remaining / 1000 + 1} ثانية", true); return }
         try {
-            if (queryMeta(uri).second > MAX_OPEN_BYTES) { toast("الملف كبير جداً"); return }
+            if (queryMeta(uri).second > MAX_OPEN_BYTES) { toast(tr("الملف كبير جداً", "File too large")); return }
             val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return
-            if (bytes.size > MAX_OPEN_BYTES) { toast("الملف كبير جداً"); return }
-            val html = String(bytes, Charsets.UTF_8)
-            val salt = extractString(html, "SALT"); val iv = extractString(html, "IV")
-            val cipher = extractString(html, "CIPHER"); val vaultId = extractString(html, "VAULT_ID")
-            val version = extractString(html, "VERSION") ?: "4"
-            val hmac = extractString(html, "HMAC") ?: ""
-            val iter = (extractString(html, "ITER")?.toIntOrNull() ?: CryptoEngine.ITER_V4).coerceIn(100_000, 5_000_000)
-            if (salt == null || iv == null || cipher == null || vaultId == null || (version != "5" && hmac.isEmpty())) {
-                toast("ملف غير صالح"); return
-            }
-            promptPassword { pass ->
-                toast("جاري فك التشفير...")
-                Thread {
-                    val dec = CryptoEngine.decryptVault(salt, iv, cipher, hmac, vaultId, version, iter, pass.toCharArray())
-                    runOnUiThread {
-                        if (dec != null) {
-                            VaultStore.resetFailures(); decryptedPayloadJson = dec; currentScreen = "view"; renderUI()
-                        } else {
-                            VaultStore.recordFailure(); toast("مفتاح خاطئ أو ملف تالف", true)
-                        }
-                    }
-                }.start()
-            }
-        } catch (e: Throwable) { toast("خطأ في القراءة") }
+            if (bytes.size > MAX_OPEN_BYTES) { toast(tr("الملف كبير جداً", "File too large")); return }
+            val parsed = CryptoEngine.parseHtml(String(bytes, Charsets.UTF_8))
+            if (parsed == null) { toast(tr("ملف غير صالح", "Invalid file")); return }
+            showUnlockDialog(parsed)
+        } catch (e: Throwable) { toast(tr("خطأ في القراءة", "Read error")) }
     }
 
-    private fun promptPassword(onPass: (String) -> Unit) {
-        val (row, et) = secretInput("أدخل المفتاح", "") {}
-        row.setPadding(dp(20), dp(8), dp(20), 0)
-        et.setTextColor(Color.BLACK); et.setHintTextColor(Color.GRAY)
-        et.background = luxuryBg(Color.WHITE, 8, 1, Color.LTGRAY)
-        AlertDialog.Builder(this).setTitle("🔒 فتح الخزنة").setView(row)
-            .setPositiveButton("فتح") { _, _ -> onPass(et.text.toString()) }
-            .setNegativeButton("إلغاء", null).show()
-    }
-
-    // ---------------------------------------------------------- view
-    private fun mediaMime(item: JSONObject): String {
-        val d = item.optString("data")
-        return if (d.startsWith("data:")) d.substringAfter("data:").substringBefore(";").ifEmpty { "application/octet-stream" }
-        else item.optString("mime", "application/octet-stream")
-    }
-
-    private fun mediaB64(item: JSONObject): String {
-        val d = item.optString("data"); return if (d.startsWith("data:")) d.substringAfter(",") else d
-    }
-
-    private fun decodeSampled(bytes: ByteArray, maxDim: Int): Bitmap? {
-        val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)
-        var s = 1
-        while (o.outWidth / s > maxDim * 2 || o.outHeight / s > maxDim * 2) s *= 2
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = s })
-    }
-
-    private fun buildView(parent: LinearLayout) {
-        parent.addView(createBackButton())
-        val jsonStr = decryptedPayloadJson ?: return
-        val json = try { JSONObject(jsonStr) } catch (e: Exception) { toast("بيانات تالفة"); goHome(); return }
-        val fields = json.optJSONObject("data")
-        val secretArr = json.optJSONArray("secret")
-        val secretSet = HashSet<String>().also { s -> if (secretArr != null) for (i in 0 until secretArr.length()) s.add(secretArr.optString(i)) }
-        val legacy = Regex("password|pass|cvv|pin|seed|secret|كلمة المرور|رقم البطاقة|العبارة", RegexOption.IGNORE_CASE)
-
-        parent.addView(TextView(this).apply {
-            text = AppConfig.spec(json.optString("type")).title + (json.optString("created").let { if (it.isEmpty()) "" else "  •  $it" })
-            setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(12))
-        })
-
-        if (fields != null && fields.length() > 0) {
-            val box = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 12, 1, AppConfig.GOLD_PRIMARY)
-                setPadding(dp(16), dp(16), dp(16), dp(16)); layoutParams = lp(bottom = 16)
-            }
-            for (key in fields.keys()) {
-                val valStr = fields.optString(key); if (valStr.isEmpty()) continue
-                val hide = if (secretArr != null) secretSet.contains(key) else legacy.containsMatchIn(key)
-                val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(8), 0, dp(8)) }
-                row.addView(TextView(this).apply { text = key; setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; typeface = Typeface.DEFAULT_BOLD })
-                val valRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, 0) }
-                val valueView = TextView(this).apply {
-                    text = if (hide) MASK else valStr; setTextColor(AppConfig.TEXT_WHITE); textSize = 16f
-                    typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f)
-                }
-                valRow.addView(valueView)
-                if (hide) {
-                    var shown = false
-                    valRow.addView(TextView(this).apply {
-                        text = "👁"; textSize = 18f; setPadding(dp(8), 0, dp(8), 0)
-                        setOnClickListener { shown = !shown; valueView.text = if (shown) valStr else MASK }
-                    })
-                }
-                valRow.addView(TextView(this).apply { text = "📋"; textSize = 18f; setPadding(dp(8), 0, 0, 0); setOnClickListener { copyToClipboard(valStr) } })
-                row.addView(valRow); box.addView(row)
-            }
-            parent.addView(box)
-        }
-
-        val media = json.optJSONArray("media")
-        if (media != null) for (i in 0 until media.length()) {
-            val item = media.getJSONObject(i)
-            val name = item.optString("name"); val kind = item.optString("kind"); val mime = mediaMime(item); val b64 = mediaB64(item)
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 12, 1, AppConfig.BORDER)
-                setPadding(dp(16), dp(16), dp(16), dp(16)); layoutParams = lp(bottom = 12)
-            }
-            if (kind == "image") {
-                card.addView(ImageView(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(MATCH, dp(220)); scaleType = ImageView.ScaleType.FIT_CENTER
-                    try { setImageBitmap(decodeSampled(Base64.decode(b64, Base64.DEFAULT), 1024)) } catch (e: Throwable) {}
-                })
-            }
-            card.addView(TextView(this).apply { text = name; setTextColor(AppConfig.TEXT_WHITE); textSize = 12f; setPadding(0, dp(8), 0, dp(8)); gravity = Gravity.CENTER })
-            card.addView(goldButton("حفظ الملف", 48).apply {
-                setOnClickListener {
-                    pendingSaveFileData = b64
-                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = mime; putExtra(Intent.EXTRA_TITLE, name) }
-                    suppressLockOnce = true
-                    @Suppress("DEPRECATION") startActivityForResult(intent, REQ_SAVE_FILE)
-                }
-            })
-            parent.addView(card)
-        }
-
-        parent.addView(outlineButton("🔒 قفل وإغلاق الخزنة", 48, AppConfig.DANGER_RED).apply { layoutParams = lp(h = dp(48), top = 8); setOnClickListener { goHome() } })
-    }
-
-    // ---------------------------------------------------------- settings
-    private fun showSettingsDialog() {
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(20), dp(20), dp(20)) }
-        layout.addView(CheckBox(this).apply {
-            text = "منع لقطات الشاشة (FLAG_SECURE)"; setTextColor(AppConfig.TEXT_WHITE); isChecked = VaultStore.isScreenSecure()
-            setOnCheckedChangeListener { _, c -> VaultStore.setScreenSecure(c); applyScreenSecurity() }
-        })
-        layout.addView(CheckBox(this).apply {
-            text = "قفل التطبيق ببصمة / رمز الجهاز"; setTextColor(AppConfig.TEXT_WHITE); isChecked = VaultStore.isAppLock()
-            setOnCheckedChangeListener { btn, c ->
-                if (c && !deviceSecure()) { btn.isChecked = false; toast("فعّل قفل الشاشة في إعدادات الجهاز أولاً", true) }
-                else VaultStore.setAppLock(c)
-            }
-        })
-        layout.addView(TextView(this).apply { text = "القفل التلقائي عند مغادرة التطبيق"; setTextColor(AppConfig.TEXT_MUTED); textSize = 12f; setPadding(0, dp(14), 0, dp(4)) })
-        layout.addView(Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, AppConfig.LOCK_LABELS)
-            setSelection(AppConfig.LOCK_VALUES.indexOf(VaultStore.autoLockSeconds()).coerceAtLeast(0), false)
-            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) { VaultStore.setAutoLockSeconds(AppConfig.LOCK_VALUES[p2]) }
-                override fun onNothingSelected(p0: AdapterView<*>?) {}
-            }
-        })
-        layout.addView(Button(this).apply {
-            text = "إعادة تعيين الإحصائيات"; isAllCaps = false
-            setOnClickListener { VaultStore.resetStats(); toast("تمت إعادة التعيين"); if (currentScreen == "home") renderUI() }
-        })
-        AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
-            .setTitle("⚙️ إعدادات الخصوصية").setView(layout).setPositiveButton("حسناً", null).show()
-    }
-
-    // ---------------------------------------------------------- clipboard
-    private fun copyToClipboard(text: String) {
-        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Keykeep", text)
-        if (Build.VERSION.SDK_INT >= 33) {
-            clip.description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
-        }
-        cm.setPrimaryClip(clip)
-        toast("تم النسخ — سيُمسح بعد 30 ثانية")
-        handler.removeCallbacks(clearClipRunnable); handler.postDelayed(clearClipRunnable, CLIP_CLEAR_MS)
-    }
-
-    private fun clearClipboard() {
-        try {
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            if (Build.VERSION.SDK_INT >= 28) cm.clearPrimaryClip() else cm.setPrimaryClip(ClipData.newPlainText("", ""))
-        } catch (e: Exception) {}
-    }
-
-    // ---------------------------------------------------------- files
-    private fun queryMeta(uri: Uri): Pair<String, Long> {
-        var name: String? = null; var size = -1L
-        if (uri.scheme == "content") {
-            contentResolver.query(uri, null, null, null, null)?.use { c ->
-                if (c.moveToFirst()) {
-                    val ni = c.getColumnIndex(OpenableColumns.DISPLAY_NAME); if (ni != -1) name = c.getString(ni)
-                    val si = c.getColumnIndex(OpenableColumns.SIZE); if (si != -1 && !c.isNull(si)) size = c.getLong(si)
-                }
-            }
-        }
-        return Pair(name ?: "file_${System.currentTimeMillis()}", size)
-    }
-
-    private fun formatSize(size: Long): String {
-        if (size <= 0) return "0 B"
-        val units = arrayOf("B", "KB", "MB", "GB"); var s = size.toDouble(); var i = 0
-        while (s >= 1024 && i < units.size - 1) { s /= 1024; i++ }
-        return String.format(Locale.US, "%.1f %s", s, units[i])
-    }
-
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode != RESULT_OK) {
-            if (requestCode == REQ_SAVE_VAULT) pendingSaveHtml = null
-            return
-        }
-        when (requestCode) {
-            REQ_AUTH -> { appUnlocked = true; currentScreen = "home"; renderUI() }
-
-            REQ_ATTACH -> {
-                if (data == null) return
-                val uris = mutableListOf<Uri>()
-                val clip = data.clipData
-                if (clip != null) { for (i in 0 until clip.itemCount) uris.add(clip.getItemAt(i).uri) }
-                else data.data?.let { uris.add(it) }
-                val baseBytes = mediaItems.sumOf { it.optLong("size", 0L) }
-                Thread {
-                    var total = baseBytes; var skipped = 0
-                    val added = mutableListOf<JSONObject>()
-                    for (uri in uris) {
-                        try {
-                            val (name, declared) = queryMeta(uri)
-                            if (declared > MAX_FILE_BYTES || (declared > 0 && total + declared > MAX_TOTAL_BYTES)) { skipped++; continue }
-                            val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: continue
-                            if (bytes.size > MAX_FILE_BYTES || total + bytes.size > MAX_TOTAL_BYTES) { skipped++; continue }
-                            val mime = contentResolver.getType(uri) ?: "application/octet-stream"
-                            total += bytes.size
-                            added.add(JSONObject().apply {
-                                put("kind", if (mime.startsWith("image/")) "image" else "file")
-                                put("mime", mime); put("name", name); put("size", bytes.size.toLong())
-                                put("data", Base64.encodeToString(bytes, Base64.NO_WRAP))
-                            })
-                        } catch (e: Throwable) { skipped++ }
-                    }
-                    runOnUiThread {
-                        mediaItems.addAll(added)
-                        if (skipped > 0) toast("تم تجاهل $skipped ملف (حجم كبير أو خطأ قراءة)", true)
-                        renderUI()
-                    }
-                }.start()
-            }
-
-            REQ_SAVE_VAULT -> data?.data?.let { uri ->
-                val html = pendingSaveHtml ?: return@let
-                try {
-                    contentResolver.openOutputStream(uri, "wt")?.use { it.write(html.toByteArray(Charsets.UTF_8)) }
-                    VaultStore.addVaultStats(mediaItems.size, html.length.toLong())
-                    toast("👑 تم تشفير وحفظ الخزنة", true)
-                    wipeDrafts(); currentScreen = "home"; renderUI()
-                } catch (e: Exception) { toast("فشل الحفظ") }
-            }
-
-            REQ_OPEN -> data?.data?.let { openVaultFile(it) }
-
-            REQ_SAVE_FILE -> data?.data?.let { uri ->
-                val d = pendingSaveFileData ?: return@let
-                try {
-                    contentResolver.openOutputStream(uri, "wt")?.use { it.write(Base64.decode(d, Base64.DEFAULT)) }
-                    toast("✔ تم حفظ الملف")
-                } catch (e: Exception) { toast("فشل الحفظ") }
-                finally { pendingSaveFileData = null }
-            }
-        }
-    }
-}
+    private fun showUnlockDialog(p: ParsedVault) {
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val (row, et) = secretInput(tr("أدخل المفتاح", "Enter key"), "") {}
+        val err = TextView(this).appl

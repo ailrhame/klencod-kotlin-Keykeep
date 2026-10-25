@@ -2859,7 +2859,7 @@ if (shamirN > 0) {
             card.addView(goldButton(tr("حفظ الملف", "Save file"), 48).apply {
                 setOnClickListener {
                     pendingSaveFileData = b64
-                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = mime; putExtra(Intent.EXTRA_TITLE, name) }
+                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType(mime); putExtra(Intent.EXTRA_TITLE, name) }
                     launchForResult(intent) { code, d ->
                         val uri = d?.data; val payload = pendingSaveFileData
                         if (code == RESULT_OK && uri != null && payload != null) {

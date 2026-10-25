@@ -2224,7 +2224,7 @@ class MainActivity : Activity() {
         parent.addView(outlineButton(tr("📁 اختيار ملف مفتاح", "📁 Choose keyfile"), 40).apply {
             layoutParams = lp(h = dp(40), top = 4)
             setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType("*/*") }
                 launchForResult(intent) { code, data ->
                     if (code == RESULT_OK && data?.data != null) {
                         try {
@@ -2316,7 +2316,7 @@ private fun animateStrength(bar: ProgressBar, label: TextView, p: Int, color: In
         parent.addView(outlineButton(tr("📎 إرفاق مستندات / صور", "📎 Attach documents / images")).apply {
             layoutParams = lp(h = dp(48), top = 12)
             setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) }
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType("*/*"); putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) }
                 launchForResult(intent) { code, data -> if (code == RESULT_OK && data != null) attachFromIntent(data) }
             }
         })
@@ -2513,12 +2513,19 @@ if (shamirN > 0) {
     }
 
     private fun saveVaultFile(html: String, fileName: String, pass: String, attachCount: Int) {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "text/html"; putExtra(Intent.EXTRA_TITLE, fileName) }
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType("text/html"); putExtra(Intent.EXTRA_TITLE, fileName) }
         launchForResult(intent) { code, d ->
             val uri = d?.data
             if (code != RESULT_OK || uri == null) return@launchForResult
-            try { contentResolver.openOutputStream(uri, "wt")?.use { it.write(html.toByteArray(Charsets.UTF_8)) } }
-            catch (e: Exception) { haptic(false); toast(tr("فشل الحفظ", "Save failed")); return@launchForResult }
+            try {
+                val output = contentResolver.openOutputStream(uri, "wt")
+                    ?: throw java.io.IOException("Unable to open destination")
+                output.use { it.write(html.toByteArray(Charsets.UTF_8)) }
+            } catch (e: Exception) {
+                haptic(false)
+                toast(tr("فشل الحفظ: ", "Save failed: ") + (e.message ?: "I/O error"), true)
+                return@launchForResult
+            }
             VaultStore.addVaultStats(attachCount, html.length.toLong())
             val busy = showBusy(tr("جاري التحقق من سلامة الملف...", "Verifying the saved file..."))
             Thread {
@@ -2545,7 +2552,7 @@ if (shamirN > 0) {
             val dir = File(cacheDir, "shared").apply { mkdirs() }
             val f = File(dir, fileName); f.writeText(html, Charsets.UTF_8)
             val uri = Uri.parse("content://$packageName.vaultshare/shared/" + Uri.encode(fileName))
-            val send = Intent(Intent.ACTION_SEND).apply { type = "text/html"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            val send = Intent(Intent.ACTION_SEND).apply { setType("text/html"); putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
             suppressLockOnce = true
             startActivity(Intent.createChooser(send, tr("مشاركة الخزنة المشفرة", "Share encrypted vault")))
             VaultStore.addVaultStats(attachCount, html.length.toLong()); haptic(true)
@@ -2648,7 +2655,7 @@ if (shamirN > 0) {
         card.addView(TextView(this).apply { text = tr("يدعم الملفات القديمة (v4) والجديدة (v5)", "Supports old (v4) and new (v5) files"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(24)) })
         card.addView(goldButton(tr("تصفح الملفات", "Browse files"), 48).apply {
             setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType("*/*") }
                 launchForResult(intent) { code, d -> if (code == RESULT_OK) d?.data?.let { openVaultFile(it) } }
             }
         })
@@ -2673,7 +2680,7 @@ if (shamirN > 0) {
         val keyFileBtn = outlineButton(tr("📁 إرفاق ملف مفتاح (إن وجد)", "📁 Attach keyfile (if any)"), 40).apply {
             layoutParams = lp(h = dp(40), top = 6)
             setOnClickListener {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); setType("*/*") }
                 launchForResult(intent) { code, data ->
                     if (code == RESULT_OK && data?.data != null) {
                         try {
@@ -2863,8 +2870,16 @@ if (shamirN > 0) {
                     launchForResult(intent) { code, d ->
                         val uri = d?.data; val payload = pendingSaveFileData
                         if (code == RESULT_OK && uri != null && payload != null) {
-                            try { contentResolver.openOutputStream(uri, "wt")?.use { it.write(Base64.decode(payload, Base64.DEFAULT)) }; haptic(true); toast(tr("✔ تم حفظ الملف", "✔ File saved")) }
-                            catch (e: Exception) { haptic(false); toast(tr("فشل الحفظ", "Save failed")) }
+                            try {
+                                val output = contentResolver.openOutputStream(uri, "wt")
+                                    ?: throw java.io.IOException("Unable to open destination")
+                                output.use { it.write(Base64.decode(payload, Base64.DEFAULT)) }
+                                haptic(true)
+                                toast(tr("✔ تم حفظ الملف", "✔ File saved"))
+                            } catch (e: Exception) {
+                                haptic(false)
+                                toast(tr("فشل الحفظ: ", "Save failed: ") + (e.message ?: "I/O error"), true)
+                            }
                         }
                         pendingSaveFileData = null
                     }

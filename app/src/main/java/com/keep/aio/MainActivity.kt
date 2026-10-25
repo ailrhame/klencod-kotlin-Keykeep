@@ -39,7 +39,7 @@ class MainActivity : Activity() {
 
     private var currentScreen = "home"
     private var pendingSaveHtml = ""
-    private var mediaItems = mutableListOf<JSONObject>()
+    private val mediaItems = mutableListOf<JSONObject>()
 
     private val BG = Color.parseColor("#0a0a0d")
     private val CARD_BG = Color.parseColor("#16171b")
@@ -71,7 +71,6 @@ class MainActivity : Activity() {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
 
-        // Header
         val header = TextView(this).apply {
             text = "🔒 Keykeep"
             textSize = 28f
@@ -114,7 +113,11 @@ class MainActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
             background = roundedBg(ACCENT, 12)
             setPadding(dp(16), dp(14), dp(16), dp(14))
-            setOnClickListener { currentScreen = "create"; renderUI() }
+            setOnClickListener { 
+                mediaItems.clear() // Clear previous media items
+                currentScreen = "create"
+                renderUI() 
+            }
         }
         parent.addView(btnCreate)
 
@@ -170,7 +173,7 @@ class MainActivity : Activity() {
         layout.addView(btnAddMedia)
 
         val mediaStatus = TextView(this).apply {
-            text = "لا توجد مرفقات"
+            text = if (mediaItems.isEmpty()) "لا توجد مرفقات" else "تم إضافة ${mediaItems.size} مرفق"
             setTextColor(TEXT_MUTED)
             textSize = 12f
             setPadding(0, dp(4), 0, dp(16))
@@ -227,7 +230,7 @@ class MainActivity : Activity() {
             setOnClickListener {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "*/*"
+                    type = "*/*" // Allow any file to be selected, we will parse text
                 }
                 startActivityForResult(intent, 1002)
             }
@@ -296,7 +299,7 @@ class MainActivity : Activity() {
             }
             mediaItems.add(item)
             Toast.makeText(this, "تم إضافة المرفق", Toast.LENGTH_SHORT).show()
-            renderUI() // Refresh to show updated status (simplification)
+            renderUI()
         } catch (e: Exception) {
             Toast.makeText(this, "فشل قراءة الملف", Toast.LENGTH_SHORT).show()
         }
@@ -305,7 +308,7 @@ class MainActivity : Activity() {
     private fun handleSaveHtml(uri: Uri) {
         try {
             contentResolver.openOutputStream(uri)?.use { out ->
-                out.write(pendingSaveHtml.toByteArray())
+                out.write(pendingSaveHtml.toByteArray(Charsets.UTF_8))
             }
             Toast.makeText(this, "✔ تم حفظ الخزنة بنجاح", Toast.LENGTH_LONG).show()
             currentScreen = "home"
@@ -317,34 +320,57 @@ class MainActivity : Activity() {
 
     private fun handleOpenVault(uri: Uri) {
         try {
-            val html = contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: return
-            
-            val salt = extractValue(html, "const SALT = \"(.*?)\"") ?: return
-            val iv = extractValue(html, "const IV = \"(.*?)\"") ?: return
-            val cipher = extractValue(html, "const CIPHER = \"(.*?)\"") ?: return
-            val hmac = extractValue(html, "const HMAC = \"(.*?)\"") ?: return
-            val vaultId = extractValue(html, "const VAULT_ID = \"(.*?)\"") ?: return
-            val iterations = extractValue(html, "const ITERATIONS = (\\d+)")?.toIntOrNull() ?: 310000
+            val html = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.readText()
+            if (html.isNullOrEmpty()) {
+                Toast.makeText(this, "الملف فارغ أو غير قابل للقراءة", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // Robust regex to handle both old HTML vars (SALT_B64) and new Kotlin vars (SALT)
+            val salt = extractString(html, "SALT")
+            val iv = extractString(html, "IV")
+            val cipher = extractString(html, "CIPHER")
+            val hmac = extractString(html, "HMAC")
+            val vaultId = extractString(html, "VAULT_ID")
+            val iterations = extractInt(html, "ITERATIONS") ?: 310000
+
+            if (salt == null || iv == null || cipher == null || hmac == null || vaultId == null) {
+                Toast.makeText(this, "تنسيق الملف غير مدعوم أو البيانات تالفة", Toast.LENGTH_LONG).show()
+                return
+            }
 
             promptPassword { pass ->
-                try {
-                    val decryptedJson = decryptVault(salt, iv, cipher, hmac, vaultId, iterations, pass)
-                    if (decryptedJson != null) {
-                        showDecryptedContent(decryptedJson)
-                    } else {
-                        Toast.makeText(this, "كلمة المرور خاطئة أو الملف تالف", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "جاري فك التشفير...", Toast.LENGTH_SHORT).show()
+                Thread {
+                    try {
+                        val decryptedJson = decryptVault(salt, iv, cipher, hmac, vaultId, iterations, pass)
+                        runOnUiThread {
+                            if (decryptedJson != null) {
+                                showDecryptedContent(decryptedJson)
+                            } else {
+                                Toast.makeText(this, "كلمة المرور خاطئة أو الملف تالف", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        runOnUiThread {
+                            Toast.makeText(this, "فشل فك التشفير: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
                     }
-                } catch (e: Exception) {
-                    Toast.makeText(this, "فشل فك التشفير", Toast.LENGTH_LONG).show()
-                }
+                }.start()
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "ملف غير صالح", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "ملف غير صالح: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun extractValue(html: String, regexStr: String): String? {
-        return Regex(regexStr).find(html)?.groupValues?.get(1)
+    private fun extractString(html: String, varName: String): String? {
+        val regex = Regex("""(?:var|const)\s+$varName(?:_B64)?\s*=\s*["'](.*?)["']""")
+        return regex.find(html)?.groupValues?.get(1)
+    }
+
+    private fun extractInt(html: String, varName: String): Int? {
+        val regex = Regex("""(?:var|const)\s+$varName\s*=\s*(\d+)""")
+        return regex.find(html)?.groupValues?.get(1)?.toIntOrNull()
     }
 
     private fun promptPassword(onPass: (String) -> Unit) {
@@ -447,7 +473,7 @@ class MainActivity : Activity() {
             val compressed = cipher.doFinal(ciphertext)
 
             val gzipIn = GZIPInputStream(ByteArrayInputStream(compressed))
-            return gzipIn.bufferedReader().use { it.readText() }
+            return gzipIn.bufferedReader(Charsets.UTF_8).use { it.readText() }
         } catch (e: Exception) {
             return null
         }

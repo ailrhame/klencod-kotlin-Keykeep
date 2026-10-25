@@ -1664,4 +1664,328 @@ class MainActivity : ComponentActivity() {
     private fun showUnlockDialog(p: ParsedVault) {
         val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
         val (row, et) = secretInput(tr("أدخل المفتاح", "Enter key"), "") {}
-        val err = TextView(this).appl
+        val err = TextView(this).apply { setTextColor(AppConfig.DANGER_RED); textSize = fs(13f); setPadding(0, dp(6), 0, 0) }
+        val busy = ProgressBar(this).apply { visibility = View.GONE }
+        layout.addView(row); layout.addView(err); layout.addView(busy)
+        val dlg = dialogBuilder().setTitle(tr("🔒 فتح الخزنة", "🔒 Unlock vault")).setView(layout)
+            .setPositiveButton(tr("فتح", "Open"), null).setNegativeButton(tr("إلغاء", "Cancel"), null).create()
+        dlg.show(); secureDialog(dlg)
+        val btn = dlg.getButton(AlertDialog.BUTTON_POSITIVE)
+        btn.setOnClickListener {
+            val rem = VaultStore.lockRemainingMs()
+            if (rem > 0) { err.text = tr("محاولات خاطئة كثيرة. انتظر ", "Too many wrong attempts. Wait ") + (rem / 1000 + 1) + "s"; shake(row); haptic(false); return@setOnClickListener }
+            val pass = et.text.toString(); if (pass.isEmpty()) return@setOnClickListener
+            btn.isEnabled = false; busy.visibility = View.VISIBLE; err.text = ""
+            Thread {
+                val dec = CryptoEngine.decryptVault(p, pass.toCharArray())
+                runOnUiThread {
+                    if (!dlg.isShowing) return@runOnUiThread
+                    busy.visibility = View.GONE; btn.isEnabled = true
+                    if (dec != null) { VaultStore.resetFailures(); dlg.dismiss(); haptic(true); onDecrypted(dec) }
+                    else { VaultStore.recordFailure(); haptic(false); err.text = tr("مفتاح خاطئ أو ملف تالف", "Wrong key or corrupted file"); shake(row) }
+                }
+            }.start()
+        }
+    }
+
+    private fun onDecrypted(json: String) {
+        decryptedPayloadJson = json
+        val exp = try { JSONObject(json).optLong("expires", 0L) } catch (e: Exception) { 0L }
+        if (exp > 0 && System.currentTimeMillis() > exp) {
+            dialogBuilder().setTitle(tr("⏳ انتهت صلاحية الخزنة", "⏳ Vault expired"))
+                .setMessage(tr("انتهت في ", "Expired on ") + SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date(exp)) + tr("\nصفحة HTML ترفض عرضها، لكنك كمالك تستطيع عرضها هنا.", "\nThe HTML page refuses to show it, but as the owner you can view it here."))
+                .setPositiveButton(tr("عرض على أي حال", "View anyway")) { _, _ -> showDecrypted() }
+                .setNegativeButton(tr("إغلاق", "Close")) { _, _ -> decryptedPayloadJson = null }
+                .setCancelable(false).show().also { secureDialog(it) }
+        } else showDecrypted()
+    }
+    private fun showDecrypted() { unlockAnimPending = true; currentScreen = "view"; renderUI() }
+
+    // ---------------------------------------------------------- view
+    private fun mediaMime(item: JSONObject): String {
+        val d = item.optString("data")
+        return if (d.startsWith("data:")) d.substringAfter("data:").substringBefore(";").ifEmpty { "application/octet-stream" } else item.optString("mime", "application/octet-stream")
+    }
+    private fun mediaB64(item: JSONObject): String { val d = item.optString("data"); return if (d.startsWith("data:")) d.substringAfter(",") else d }
+
+    private fun decodeSampled(bytes: ByteArray, maxDim: Int): Bitmap? {
+        val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)
+        var s = 1
+        while (o.outWidth / s > maxDim * 2 || o.outHeight / s > maxDim * 2) s *= 2
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = s })
+    }
+
+    private fun buildView(parent: LinearLayout) {
+        parent.addView(createBackButton())
+        val jsonStr = decryptedPayloadJson ?: return
+        val json = try { JSONObject(jsonStr) } catch (e: Exception) { toast(tr("بيانات تالفة", "Corrupted data")); goHome(); return }
+
+        if (unlockAnimPending) {
+            unlockAnimPending = false
+            if (effectsOn()) {
+                val icon = TextView(this).apply { text = "🔒"; textSize = fs(56f); gravity = Gravity.CENTER; layoutParams = lp(bottom = 4) }
+                parent.addView(icon)
+                icon.postDelayed({
+                    icon.animate().scaleX(1.3f).scaleY(1.3f).setDuration(180).withEndAction {
+                        icon.text = "🔓"
+                        icon.animate().scaleX(1f).scaleY(1f).setDuration(180).withEndAction {
+                            icon.animate().alpha(0f).setStartDelay(600).setDuration(300).withEndAction { icon.visibility = View.GONE }.start()
+                        }.start()
+                    }.start()
+                }, 150)
+            }
+        }
+
+        val fields = json.optJSONObject("data")
+        val secretArr = json.optJSONArray("secret"); val totpArr = json.optJSONArray("totp")
+        val secretSet = HashSet<String>().also { s -> if (secretArr != null) for (i in 0 until secretArr.length()) s.add(secretArr.optString(i)) }
+        val legacy = Regex("password|pass|cvv|pin|seed|secret|كلمة المرور|رقم البطاقة|العبارة", RegexOption.IGNORE_CASE)
+
+        val title = json.optString("title")
+        if (title.isNotEmpty()) parent.addView(TextView(this).apply { text = title; setTextColor(AppConfig.GOLD_PRIMARY); textSize = fs(20f); typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(4)) })
+        val info = mutableListOf(AppConfig.spec(json.optString("type")).title)
+        json.optString("created").takeIf { it.isNotEmpty() }?.let { info.add(it) }
+        json.optLong("expires", 0L).takeIf { it > 0 }?.let { info.add(tr("تنتهي: ", "Expires: ") + SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date(it))) }
+        parent.addView(TextView(this).apply { text = info.joinToString("  •  "); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); gravity = Gravity.CENTER; setPadding(0, 0, 0, dp(12)) })
+
+        // ---- live TOTP codes
+        if (totpArr != null && fields != null) for (i in 0 until totpArr.length()) {
+            val label = totpArr.optString(i); val p = TotpEngine.parse(fields.optString(label)) ?: continue
+            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 12, 1, AppConfig.GOLD_PRIMARY); setPadding(dp(16), dp(14), dp(16), dp(14)); layoutParams = lp(bottom = 14) }
+            box.addView(TextView(this).apply { text = "🔢  $label"; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); typeface = Typeface.DEFAULT_BOLD })
+            val codeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+            val code = TextView(this).apply { text = "------"; setTextColor(AppConfig.GOLD_PRIMARY); textSize = fs(32f); typeface = Typeface.MONOSPACE; letterSpacing = 0.1f; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f) }
+            codeRow.addView(code)
+            codeRow.addView(iconButton("📋", tr("نسخ الرمز", "Copy code")) { copyToClipboard(TotpEngine.code(p, System.currentTimeMillis())) })
+            box.addView(codeRow)
+            val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = p.period; layoutParams = lp(h = dp(4), top = 4) }
+            box.addView(bar); parent.addView(box); totpEntries.add(TotpEntry(p, code, bar))
+        }
+
+        if (fields != null && fields.length() > 0) {
+            val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 12, 1, AppConfig.GOLD_PRIMARY); setPadding(dp(16), dp(16), dp(16), dp(16)); layoutParams = lp(bottom = 16) }
+            for (key in fields.keys()) {
+                val valStr = fields.optString(key); if (valStr.isEmpty()) continue
+                val hide = if (secretArr != null) secretSet.contains(key) else legacy.containsMatchIn(key)
+                val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(8), 0, dp(8)) }
+                row.addView(TextView(this).apply { text = key; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); typeface = Typeface.DEFAULT_BOLD })
+                val valRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+                val valueView = TextView(this).apply { text = if (hide) MASK else valStr; setTextColor(AppConfig.TEXT_MAIN); textSize = fs(16f); typeface = Typeface.DEFAULT_BOLD; layoutParams = LinearLayout.LayoutParams(0, WRAP, 1f) }
+                valRow.addView(valueView)
+                if (hide) {
+                    var shown = false
+                    valRow.addView(iconButton("👁", tr("إظهار / إخفاء $key", "Show / hide $key")) { shown = !shown; flipText(valueView, if (shown) valStr else MASK) })
+                }
+                valRow.addView(iconButton("📋", tr("نسخ $key", "Copy $key")) { copyToClipboard(valStr) })
+                row.addView(valRow); box.addView(row)
+            }
+            parent.addView(box)
+        }
+
+        val media = json.optJSONArray("media")
+        if (media != null) for (i in 0 until media.length()) {
+            val item = media.getJSONObject(i)
+            val name = item.optString("name"); val kind = item.optString("kind"); val mime = mediaMime(item); val b64 = mediaB64(item)
+            val card = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = luxuryBg(AppConfig.CARD_DARK, 12, 1, AppConfig.BORDER); setPadding(dp(16), dp(16), dp(16), dp(16)); layoutParams = lp(bottom = 12) }
+            if (kind == "image") {
+                card.addView(ImageView(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(MATCH, dp(220)); scaleType = ImageView.ScaleType.FIT_CENTER
+                    contentDescription = tr("صورة: $name — اضغط للتكبير", "Image: $name — tap to enlarge")
+                    try { setImageBitmap(decodeSampled(Base64.decode(b64, Base64.DEFAULT), 1024)) } catch (e: Throwable) {}
+                    setOnClickListener { try { decodeSampled(Base64.decode(b64, Base64.DEFAULT), 2048)?.let { showImagePreview(it) } } catch (e: Throwable) { toast(tr("تعذر العرض", "Cannot display")) } }
+                })
+            }
+            card.addView(TextView(this).apply { text = name; setTextColor(AppConfig.TEXT_MAIN); textSize = fs(12f); setPadding(0, dp(8), 0, dp(8)); gravity = Gravity.CENTER })
+            card.addView(goldButton(tr("حفظ الملف", "Save file"), 48).apply {
+                setOnClickListener {
+                    pendingSaveFileData = b64
+                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = mime; putExtra(Intent.EXTRA_TITLE, name) }
+                    launchForResult(intent) { code, d ->
+                        val uri = d?.data; val payload = pendingSaveFileData
+                        if (code == RESULT_OK && uri != null && payload != null) {
+                            try { contentResolver.openOutputStream(uri, "wt")?.use { it.write(Base64.decode(payload, Base64.DEFAULT)) }; haptic(true); toast(tr("✔ تم حفظ الملف", "✔ File saved")) }
+                            catch (e: Exception) { haptic(false); toast(tr("فشل الحفظ", "Save failed")) }
+                        }
+                        pendingSaveFileData = null
+                    }
+                }
+            })
+            parent.addView(card)
+        }
+
+        parent.addView(outlineButton(tr("🔒 قفل وإغلاق الخزنة", "🔒 Lock & close vault"), 48, AppConfig.DANGER_RED).apply { layoutParams = lp(h = dp(48), top = 8); setOnClickListener { goHome() } })
+
+        if (totpEntries.isNotEmpty()) { tickTotp(); handler.postDelayed(totpTick, 1000) }
+    }
+
+    private fun tickTotp() {
+        val now = System.currentTimeMillis()
+        for (e in totpEntries) {
+            val c = TotpEngine.code(e.p, now); val rem = TotpEngine.remaining(e.p, now); val h = (c.length + 1) / 2
+            e.codeView.text = c.substring(0, h) + " " + c.substring(h)
+            e.bar.progress = rem
+            e.bar.progressTintList = ColorStateList.valueOf(if (rem <= 5) AppConfig.WARN_ORANGE else AppConfig.GOLD_PRIMARY)
+        }
+    }
+
+    private fun showImagePreview(bmp: Bitmap) {
+        val dlg = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val frame = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+        val img = ImageView(this).apply { setImageBitmap(bmp); scaleType = ImageView.ScaleType.FIT_CENTER }
+        var scale = 1f; var lastX = 0f; var lastY = 0f
+        val sd = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(d: ScaleGestureDetector): Boolean {
+                scale = (scale * d.scaleFactor).coerceIn(1f, 5f); img.scaleX = scale; img.scaleY = scale
+                if (scale == 1f) { img.translationX = 0f; img.translationY = 0f }
+                return true
+            }
+        })
+        img.setOnTouchListener { _, e ->
+            sd.onTouchEvent(e)
+            if (!sd.isInProgress && scale > 1f) {
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_UP -> { lastX = e.x; lastY = e.y }
+                    MotionEvent.ACTION_MOVE -> { img.translationX += e.x - lastX; img.translationY += e.y - lastY; lastX = e.x; lastY = e.y }
+                }
+            }
+            true
+        }
+        frame.addView(img, FrameLayout.LayoutParams(MATCH, MATCH))
+        frame.addView(iconButton("✖", tr("إغلاق", "Close"), 24f) { dlg.dismiss() }.apply { setTextColor(Color.WHITE) },
+            FrameLayout.LayoutParams(dp(56), dp(56), Gravity.TOP or Gravity.END).apply { setMargins(dp(8), dp(32), dp(8), 0) })
+        dlg.setContentView(frame); secureDialog(dlg); dlg.show()
+    }
+
+    // ---------------------------------------------------------- settings
+    private fun showSettingsDialog() {
+        lateinit var dlg: AlertDialog
+        fun reopen() { dlg.dismiss(); renderUI(); showSettingsDialog() }
+        val pad = dp(20)
+        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
+        fun section(t: String) = TextView(this).apply { text = t; setTextColor(AppConfig.GOLD_PRIMARY); textSize = fs(13f); typeface = Typeface.DEFAULT_BOLD; setPadding(0, dp(14), 0, dp(6)) }
+        fun check(t: String, v: Boolean, cb: (android.widget.CompoundButton, Boolean) -> Unit) = CheckBox(this).apply {
+            text = t; setTextColor(AppConfig.TEXT_MAIN); textSize = fs(14f); isChecked = v; minHeight = dp(44); setOnCheckedChangeListener { b, c -> cb(b, c) }
+        }
+
+        layout.addView(section(tr("اللغة", "Language")))
+        val langRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for ((code, name) in listOf("ar" to "العربية", "en" to "English")) {
+            langRow.addView((if ((code == "ar") == VaultStore.isArabic()) goldButton(name, 44) else outlineButton(name, 44)).apply {
+                layoutParams = LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginEnd = dp(8) }
+                setOnClickListener { VaultStore.setLang(code); reopen() }
+            })
+        }
+        layout.addView(langRow)
+
+        layout.addView(section(tr("الثيم", "Theme")))
+        val strip = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (t in THEMES) {
+            val sel = t.id == AppConfig.theme.id
+            val cell = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(dp(6), dp(4), dp(6), dp(4)) }
+            cell.addView(View(this).apply {
+                background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(t.bg1, t.acc)).apply { shape = GradientDrawable.OVAL; setStroke(dp(if (sel) 3 else 1), if (sel) Color.WHITE else t.border) }
+                layoutParams = LinearLayout.LayoutParams(dp(46), dp(46))
+            })
+            cell.addView(TextView(this).apply { text = if (VaultStore.isArabic()) t.nameAr else t.nameEn; setTextColor(AppConfig.TEXT_MUTED); textSize = fs(10f); gravity = Gravity.CENTER; setPadding(0, dp(4), 0, 0) })
+            cell.contentDescription = (if (VaultStore.isArabic()) t.nameAr else t.nameEn); cell.isClickable = true
+            cell.setOnClickListener { VaultStore.setTheme(t.id); haptic(true); reopen() }
+            strip.addView(cell)
+        }
+        layout.addView(HorizontalScrollView(this).apply { addView(strip); isHorizontalScrollBarEnabled = false })
+
+        layout.addView(section(tr("المظهر والتفاعل", "Appearance & feedback")))
+        layout.addView(check(tr("التأثيرات الحركية", "Visual effects"), VaultStore.effects()) { _, c -> VaultStore.setEffects(c); reopen() })
+        layout.addView(check(tr("الاهتزاز عند النجاح / الفشل", "Haptic feedback"), VaultStore.haptic()) { _, c -> VaultStore.setHaptic(c) })
+        layout.addView(TextView(this).apply { text = tr("حجم الخط", "Font size"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); setPadding(0, dp(8), 0, dp(4)) })
+        layout.addView(Spinner(this).apply {
+            adapter = themedAdapter(AppConfig.fontLabels()); setSelection(VaultStore.fontIndex(), false)
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) { if (p2 != VaultStore.fontIndex()) { VaultStore.setFontIndex(p2); reopen() } }
+                override fun onNothingSelected(p0: AdapterView<*>?) {}
+            }
+        })
+
+        layout.addView(section(tr("الخصوصية والأمان", "Privacy & security")))
+        layout.addView(check(tr("منع لقطات الشاشة", "Block screenshots"), VaultStore.isScreenSecure()) { _, c -> VaultStore.setScreenSecure(c); applyScreenSecurity() })
+        layout.addView(check(tr("قفل التطبيق ببصمة / رمز الجهاز", "App lock (biometrics / device PIN)"), VaultStore.isAppLock()) { b, c ->
+            if (c && !deviceSecure()) { b.isChecked = false; toast(tr("فعّل قفل الشاشة في إعدادات الجهاز أولاً", "Set a screen lock in device settings first"), true) } else VaultStore.setAppLock(c)
+        })
+        layout.addView(TextView(this).apply { text = tr("القفل التلقائي عند مغادرة التطبيق", "Auto-lock after leaving the app"); setTextColor(AppConfig.TEXT_MUTED); textSize = fs(12f); setPadding(0, dp(8), 0, dp(4)) })
+        layout.addView(Spinner(this).apply {
+            adapter = themedAdapter(AppConfig.lockLabels()); setSelection(AppConfig.LOCK_VALUES.indexOf(VaultStore.autoLockSeconds()).coerceAtLeast(0), false)
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) { VaultStore.setAutoLockSeconds(AppConfig.LOCK_VALUES[p2]) }
+                override fun onNothingSelected(p0: AdapterView<*>?) {}
+            }
+        })
+        layout.addView(outlineButton(tr("🧹 مسح الذاكرة والحافظة الآن", "🧹 Clear memory & clipboard now"), 44, AppConfig.WARN_ORANGE).apply { layoutParams = lp(h = dp(44), top = 12); setOnClickListener { dlg.dismiss(); wipeEverything() } })
+        layout.addView(outlineButton(tr("إعادة تعيين الإحصائيات", "Reset statistics"), 44, AppConfig.TEXT_MUTED).apply { layoutParams = lp(h = dp(44), top = 8); setOnClickListener { VaultStore.resetStats(); toast(tr("تمت إعادة التعيين", "Reset done")); dlg.dismiss(); renderUI() } })
+
+        dlg = dialogBuilder().setTitle(tr("⚙️ الإعدادات", "⚙️ Settings")).setView(ScrollView(this).apply { addView(layout) }).setPositiveButton(tr("حسناً", "OK"), null).create()
+        dlg.show(); secureDialog(dlg)
+    }
+
+    // ---------------------------------------------------------- clipboard + countdown ring
+    private fun copyToClipboard(text: String) {
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Keykeep", text)
+        if (Build.VERSION.SDK_INT >= 33) clip.description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+        cm.setPrimaryClip(clip); haptic(true)
+        toast(tr("تم النسخ — سيُمسح بعد 30 ثانية", "Copied — clears in 30 seconds"))
+        handler.removeCallbacks(clearClipRunnable); handler.postDelayed(clearClipRunnable, CLIP_CLEAR_MS)
+        showRing()
+    }
+
+    private fun clearClipboard() {
+        try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            if (Build.VERSION.SDK_INT >= 28) cm.clearPrimaryClip() else cm.setPrimaryClip(ClipData.newPlainText("", ""))
+        } catch (e: Exception) {}
+    }
+
+    private fun showRing() {
+        if (!effectsOn()) return
+        hideRing()
+        val r = CountdownRing(this).apply {
+            ringColor = AppConfig.GOLD_PRIMARY; trackColor = withAlpha(AppConfig.TEXT_MUTED, 0x55); textColor = AppConfig.TEXT_MAIN
+            background = luxuryBg(withAlpha(AppConfig.CARD_DARK, 0xE6), 26, 1, AppConfig.BORDER).apply { shape = GradientDrawable.OVAL }
+            contentDescription = tr("اضغط لمسح الحافظة الآن", "Tap to clear the clipboard now")
+            setOnClickListener { handler.removeCallbacks(clearClipRunnable); clearClipboard(); hideRing(); toast(tr("تم مسح الحافظة", "Clipboard cleared")) }
+        }
+        overlay.addView(r, FrameLayout.LayoutParams(dp(54), dp(54), Gravity.BOTTOM or Gravity.END).apply { setMargins(dp(16), dp(16), dp(16), dp(28)) })
+        ring = r
+        ringAnim = ValueAnimator.ofFloat(1f, 0f).apply {
+            duration = CLIP_CLEAR_MS; interpolator = LinearInterpolator()
+            addUpdateListener { r.fraction = it.animatedValue as Float; r.label = ((it.animatedValue as Float) * 30f + 0.99f).toInt().toString(); r.invalidate() }
+            addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(a: Animator) { if (ring === r) hideRing() } })
+            start()
+        }
+    }
+
+    private fun hideRing() {
+        ringAnim?.cancel(); ringAnim = null
+        ring?.let { overlay.removeView(it) }; ring = null
+    }
+
+    // ---------------------------------------------------------- files
+    private fun queryMeta(uri: Uri): Pair<String, Long> {
+        var name: String? = null; var size = -1L
+        if (uri.scheme == "content") {
+            contentResolver.query(uri, null, null, null, null)?.use { c ->
+                if (c.moveToFirst()) {
+                    val ni = c.getColumnIndex(OpenableColumns.DISPLAY_NAME); if (ni != -1) name = c.getString(ni)
+                    val si = c.getColumnIndex(OpenableColumns.SIZE); if (si != -1 && !c.isNull(si)) size = c.getLong(si)
+                }
+            }
+        }
+        return Pair(name ?: "file_${System.currentTimeMillis()}", size)
+    }
+
+    private fun formatSize(size: Long): String {
+        if (size <= 0) return "0 B"
+        val units = arrayOf("B", "KB", "MB", "GB"); var s = size.toDouble(); var i = 0
+        while (s >= 1024 && i < units.size - 1) { s /= 1024; i++ }
+        return String.format(Locale.US, "%.1f %s", s, units[i])
+    }
+}

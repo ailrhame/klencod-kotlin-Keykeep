@@ -21,9 +21,6 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.view.animation.AlphaAnimation
-import android.view.animation.Animation
-import android.view.animation.ScaleAnimation
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -276,9 +273,7 @@ object VaultStore {
         try {
             prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             loadStats()
-        } catch (e: Exception) {
-            // Fallback to defaults
-        }
+        } catch (e: Exception) {}
     }
 
     fun loadStats() {
@@ -287,9 +282,7 @@ object VaultStore {
             attachmentCount = prefs.getInt("a_count", 0)
             usedSpace = prefs.getLong("u_space", 0L)
             lastActivity = prefs.getString("l_act", "لا يوجد") ?: "لا يوجد"
-        } catch (e: Exception) {
-            // Ignore and keep defaults
-        }
+        } catch (e: Exception) {}
     }
 
     fun addVaultStats(attachments: Int, size: Long) {
@@ -317,7 +310,7 @@ object VaultStore {
 // ============================================================
 class MainActivity : Activity() {
 
-    private var currentScreen = "splash"
+    private var currentScreen = "home" // Start directly on home
     private var pendingSaveHtml = ""
     private val mediaItems = mutableListOf<JSONObject>()
     
@@ -327,7 +320,6 @@ class MainActivity : Activity() {
     private var selectedVaultType = "note"
     private val customFields = mutableMapOf<String, String>()
     
-    // Draft states to survive UI rebuilds
     private var draftMessage = ""
     private var draftPass = ""
     private var draftPassConfirm = ""
@@ -339,18 +331,30 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        VaultStore.init(this)
-        applyScreenSecurity()
-        
-        rootContainer = FrameLayout(this)
-        setContentView(rootContainer)
-        
-        showSplashScreen()
+        try {
+            VaultStore.init(this)
+            applyScreenSecurity()
+            
+            rootContainer = FrameLayout(this)
+            setContentView(rootContainer)
+            
+            renderUI()
+        } catch (e: Throwable) {
+            // Absolute failsafe: Show the error directly on the screen
+            val tv = TextView(this).apply {
+                text = "FATAL ERROR:\n${e.message}\n\n${e.stackTraceToString()}"
+                setTextColor(Color.RED)
+                setBackgroundColor(Color.BLACK)
+                setPadding(32, 32, 32, 32)
+                textSize = 12f
+            }
+            setContentView(tv)
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        if (currentScreen != "splash" && VaultStore.isAutoLock() && lastPausedTime > 0) {
+        if (VaultStore.isAutoLock() && lastPausedTime > 0) {
             if (System.currentTimeMillis() - lastPausedTime > 30000) {
                 currentScreen = "home"
                 decryptedPayloadJson = null
@@ -399,61 +403,6 @@ class MainActivity : Activity() {
             }
             false
         }
-    }
-
-    // ---------------------------------------------------------
-    // SPLASH SCREEN
-    // ---------------------------------------------------------
-    private fun showSplashScreen() {
-        val root = FrameLayout(this).apply { 
-            background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(AppConfig.BG_OBSIDIAN, Color.parseColor("#151A20"))
-            )
-        }
-        
-        val center = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        }
-
-        val crown = TextView(this).apply {
-            text = "👑"; textSize = 72f; gravity = Gravity.CENTER
-        }
-        
-        val title = TextView(this).apply {
-            text = "KEYKEEP"; textSize = 40f; setTextColor(AppConfig.GOLD_PRIMARY)
-            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD); letterSpacing = 0.3f; gravity = Gravity.CENTER
-            setPadding(0, dp(16), 0, 0)
-        }
-
-        center.addView(crown)
-        center.addView(title)
-        root.addView(center)
-        
-        rootContainer.removeAllViews()
-        rootContainer.addView(root)
-
-        val anim = ScaleAnimation(0.5f, 1f, 0.5f, 1f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
-        anim.duration = 1000
-        anim.fillAfter = true
-        
-        val fade = AlphaAnimation(0f, 1f)
-        fade.duration = 1000
-        fade.fillAfter = true
-
-        crown.startAnimation(anim)
-        title.startAnimation(fade)
-
-        window.decorView.postDelayed({
-            currentScreen = "home"
-            try {
-                renderUI()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }, 2000)
     }
 
     // ---------------------------------------------------------

@@ -460,266 +460,2985 @@ object CryptoEngine {
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
-<meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex,nofollow">
-<title>KEYKEEP ROYAL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0d">
+<title>Vault Creator v8 — NRS Shapes</title>
 <style>
-:root{%%THEME%%}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg1);color:var(--txt);font-family:system-ui,-apple-system,sans-serif}
-.bg{position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,var(--bg2) 0%,var(--bg1) 70%);z-index:-2}
-#bgc{position:fixed;inset:0;z-index:-1;pointer-events:none}
-.header{text-align:center;padding:34px 20px 8px}
-.crown{font-size:48px;animation:float 3s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-h1{color:var(--acc);margin:8px 0 0;font-family:Georgia,serif;letter-spacing:2px;font-size:24px}
-.sub{color:var(--mut);font-size:13px;min-height:18px;margin-top:6px}
-.container{flex:1;padding:20px;max-width:600px;margin:0 auto;width:100%}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.fadein{opacity:0;animation:fin .5s ease forwards}
-@keyframes fin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.shake{animation:shake .45s}
-@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-12px)}30%{transform:translateX(12px)}45%{transform:translateX(-9px)}60%{transform:translateX(9px)}80%{transform:translateX(-4px)}}
-input{width:100%;padding:16px;margin-bottom:14px;border-radius:12px;border:1px solid var(--bd);background:var(--inp);color:var(--txt);outline:none;font-size:16px}
-input:focus{border-color:var(--acc)}
-button{font-family:inherit}
-.main-btn{position:relative;overflow:hidden;width:100%;padding:16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--acc2),var(--acc),var(--acc3));color:var(--btxt);font-weight:bold;font-size:16px;cursor:pointer;animation:glow 2.4s ease-in-out infinite}
-.main-btn::after{content:"";position:absolute;top:0;bottom:0;width:35%;left:-40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);animation:shim 2.8s infinite}
-@keyframes shim{0%{left:-40%}45%,100%{left:120%}}
-@keyframes glow{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 18px 2px var(--acc)}}
-.main-btn:disabled{opacity:.5}
-.err{color:#ff7a7a;font-size:14px;text-align:center;margin-top:10px;min-height:20px}
-.meta{color:var(--mut);font-size:12px;text-align:center;margin-bottom:8px}
-.title{color:var(--acc);font-size:20px;text-align:center;margin:0 0 6px;font-family:Georgia,serif}
-.row{display:flex;gap:8px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--bd)}
-.row:last-child{border-bottom:none}
-.key{color:var(--acc);font-weight:bold;min-width:90px;font-size:14px}
-.val{flex:1;font-family:monospace;font-size:16px;word-break:break-all;white-space:pre-wrap}
-.flip{animation:flip .35s}
-@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
-.tools{display:flex;gap:4px}
-.mini{background:transparent;border:1px solid var(--bd);color:var(--txt);border-radius:8px;padding:6px 10px;cursor:pointer;min-width:40px;min-height:36px}
-.code{font-family:monospace;font-size:32px;letter-spacing:4px;color:var(--acc);text-align:center;padding:6px 0}
-.bar{height:5px;border-radius:3px;background:var(--bd);overflow:hidden}
-.bar>i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
-.media{width:100%;border-radius:12px;margin-top:10px;border:1px solid var(--bd);display:block}
-.fname{font-size:14px;word-break:break-all;margin-bottom:8px}
-.fbtn{width:100%;padding:12px;border-radius:8px;border:1px solid var(--acc);background:transparent;color:var(--acc);font-weight:bold;cursor:pointer;margin-top:10px}
-.lock{background:transparent;border:1px solid var(--dng);color:var(--dng);border-radius:12px;padding:12px;width:100%;cursor:pointer}
-#res{display:none}
-#uIcon{position:fixed;left:50%;top:38%;font-size:84px;opacity:0;pointer-events:none;transform:translate(-50%,-50%)}
-.pop{animation:pop 1.1s ease forwards}
-@keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.1)}}
-@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+  :root {
+    --accent: #a855f7;
+    --accent2: #7c3aed;
+    --bg: #0a0a0d;
+    --panel: #101114;
+    --panel-2: #16171b;
+    --line: #2a2d34;
+    --line-2: #3a3f4a;
+    --text: #e8e9ee;
+    --muted: #8a8f9c;
+    --dim: #6a6f7a;
+    --ok: #6ef7a6;
+    --warn: #ffb37a;
+    --err: #ff7a7a;
+    --shadow-lg: 0 20px 50px rgba(0,0,0,0.7);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    background: radial-gradient(circle at 50% 15%, #1c1c22 0%, #0a0a0d 70%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, 'Consolas', monospace;
+    font-size: 14px; line-height: 1.55;
+    direction: rtl; -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 20px 12px 80px; min-height: 100vh;
+  }
+  .app { width: 100%; max-width: 780px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-radius: 14px;
+    background: linear-gradient(155deg, #2a2d34, var(--panel-2));
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset, 0 10px 24px rgba(0,0,0,0.55);
+  }
+  .topbar .brand { font-size: 13px; letter-spacing: 2px; color: var(--accent); font-weight: 800; cursor: pointer; user-select: none; }
+  .topbar .ver { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
+  .topbar .actions { display: flex; gap: 6px; align-items: center; }
+  .topbar .icon-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--line-2);
+    color: var(--text); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .topbar .icon-btn:hover { border-color: var(--accent); background: var(--panel-2); }
+  .topbar .pill {
+    font-size: 10px; padding: 4px 10px; border-radius: 20px;
+    background: rgba(168,85,247,0.15); border: 1px solid var(--accent);
+    color: var(--accent); letter-spacing: 1px;
+  }
+
+  /* VAULT PANEL */
+  .vault {
+    position: relative; padding: 22px 20px 20px; border-radius: 18px;
+    background: linear-gradient(155deg, #34373f 0%, #24262d 45%, var(--panel-2) 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset, 0 2px 0 rgba(255,255,255,0.08) inset, var(--shadow-lg);
+    transition: box-shadow 0.35s ease;
+    overflow: hidden;
+  }
+  .vault.success { box-shadow: 0 0 0 1px rgba(70,255,140,0.4) inset, 0 0 40px rgba(70,255,140,0.3), var(--shadow-lg); }
+  .vault.error { animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); } 40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); } 80% { transform: translateX(6px); }
+  }
+
+  .vault h1 { font-size: 18px; font-weight: 800; margin: 0 0 4px; color: var(--text); position: relative; z-index: 2; }
+  .vault .sub { color: var(--muted); font-size: 12px; margin: 0 0 18px; position: relative; z-index: 2; }
+
+  /* TABS */
+  .tabs-strip {
+    display: flex; gap: 4px; flex-wrap: nowrap;
+    margin-bottom: 16px; padding: 4px;
+    background: rgba(0,0,0,0.25); border-radius: 12px;
+    position: relative; z-index: 2;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs-strip::-webkit-scrollbar { display: none; }
+  .tabs-strip .tab {
+    padding: 8px 12px; border-radius: 8px; border: none;
+    background: transparent; color: var(--muted);
+    font-size: 11px; letter-spacing: 1px; cursor: pointer;
+    font-family: inherit; text-transform: uppercase;
+    white-space: nowrap; transition: color 0.15s, background 0.15s;
+  }
+  .tabs-strip .tab:hover { color: var(--text); }
+  .tabs-strip .tab.active {
+    color: var(--text); background: var(--panel-2);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+  }
+
+  .pane { display: none; position: relative; z-index: 2; }
+  .pane.visible { display: block; animation: paneIn 0.25s ease; }
+  @keyframes paneIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* FIELDS */
+  .field { margin-bottom: 16px; }
+  .field > .label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; letter-spacing: 1.5px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 8px; font-weight: 600;
+  }
+  .field > .label .tip {
+    font-size: 9px; color: var(--dim); letter-spacing: 0.5px;
+    text-transform: none; font-weight: 400;
+  }
+  .field .hint-line { font-size: 11px; color: var(--dim); margin-top: 5px; min-height: 14px; }
+  .field .hint-line.error { color: var(--err); }
+  .field .hint-line.ok { color: var(--ok); }
+  .field .hint-line.warn { color: var(--warn); }
+
+  .input-wrap { position: relative; }
+  .input-wrap input[type="text"],
+  .input-wrap input[type="password"],
+  .input-wrap input[type="number"],
+  .input-wrap input[type="datetime-local"],
+  .input-wrap textarea {
+    width: 100%; background: var(--panel);
+    border: 1px solid var(--line-2); border-radius: 11px;
+    color: var(--text); padding: 14px;
+    font-size: 14px; font-family: inherit;
+    outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input-wrap textarea { min-height: 100px; resize: vertical; line-height: 1.65; }
+  .input-wrap input:focus, .input-wrap textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(168,85,247,0.15);
+  }
+  .input-wrap input.mismatch { border-color: var(--err); }
+  .input-wrap .input-icon {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--dim); pointer-events: none; font-size: 15px;
+  }
+  .input-wrap textarea + .input-icon { top: 16px; transform: none; }
+  .input-wrap input.has-icon, .input-wrap textarea.has-icon { padding-left: 40px; }
+
+  input[type="color"] {
+    -webkit-appearance: none; appearance: none;
+    width: 48px; height: 34px; padding: 0;
+    border: 1px solid var(--line-2); border-radius: 9px;
+    background: var(--panel); cursor: pointer;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: 6px; }
+  input[type="datetime-local"] { cursor: pointer; }
+  input[type="file"] { display: none; }
+
+  /* TYPE GRID — 65 shapes */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+  }
+  .type-chip {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px;
+    background: linear-gradient(155deg, #1a1c22, #101114);
+    border: 1px solid var(--line-2);
+    border-radius: 14px;
+    padding: 10px 8px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    overflow: hidden;
+  }
+  .type-chip:hover { border-color: #565a66; transform: translateY(-2px); }
+  .type-chip.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent) inset, 0 6px 20px rgba(168,85,247,0.2);
+  }
+  .type-chip.selected::before {
+    content: '✓';
+    position: absolute; top: 6px; left: 6px;
+    width: 18px; height: 18px;
+    background: var(--accent); color: #fff;
+    border-radius: 50%;
+    font-size: 11px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3;
+  }
+  .type-chip .svg-wrap {
+    width: 100%; aspect-ratio: 1 / 1;
+    max-height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  .type-chip .svg-wrap svg {
+    width: 100%; height: 100%;
+    max-width: 80px; max-height: 80px;
+    display: block;
+  }
+  .type-chip .chip-name {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    letter-spacing: 0.2px;
+  }
+  .type-chip .see-btn {
+    margin-top: 2px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: rgba(168,85,247,0.15);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.6px;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+  }
+  .type-chip .see-btn:hover {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* COLOR ROWS */
+  .color-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 11px; padding: 10px 14px; margin-top: 8px;
+  }
+  .color-row label { font-size: 12px; color: var(--muted); flex: 1; }
+
+  /* TOGGLE ROWS */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 11px; padding: 12px 14px;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .toggle-row:hover { border-color: #4a4e5a; }
+  .toggle-row.on { border-color: rgba(47,174,102,0.5); background: rgba(47,174,102,0.04); }
+  .toggle-row .tr-text { flex: 1; min-width: 0; }
+  .toggle-row .tr-title { font-size: 13px; color: var(--text); font-weight: 600; }
+  .toggle-row .tr-desc { font-size: 11px; color: var(--dim); margin-top: 3px; line-height: 1.5; }
+  .toggle-row input[type="checkbox"] { display: none; }
+  .toggle-row .sw {
+    position: relative; flex-shrink: 0;
+    width: 46px; height: 26px; border-radius: 22px;
+    background: var(--line-2); transition: background 0.25s;
+  }
+  .toggle-row .sw::before {
+    content: ''; position: absolute;
+    width: 20px; height: 20px; left: 3px; top: 3px;
+    background: #cfd2d8; border-radius: 50%; transition: 0.25s;
+  }
+  .toggle-row input[type="checkbox"]:checked + .sw { background: #2fae66; }
+  .toggle-row input[type="checkbox"]:checked + .sw::before {
+    transform: translateX(20px); background: #fff;
+  }
+
+  /* FILE DROP */
+  .file-drop {
+    border: 2px dashed var(--line-2);
+    border-radius: 12px; padding: 22px 16px; text-align: center;
+    color: var(--muted); font-size: 12.5px; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .file-drop:hover { border-color: var(--accent); color: var(--text); background: rgba(168,85,247,0.04); }
+  .file-drop.dragover { border-color: var(--accent); background: rgba(168,85,247,0.08); color: var(--text); }
+  .file-drop strong { color: var(--accent); }
+  .file-drop .drop-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+
+  .media-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .media-item {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 10px; padding: 8px;
+  }
+  .media-item .thumb {
+    width: 48px; height: 48px; border-radius: 7px; overflow: hidden;
+    flex-shrink: 0; background: #000;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .media-item .thumb img, .media-item .thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .media-item .file-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .media-item .file-name { font-size: 11px; color: #9aa0ab; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; }
+  .media-item .caption { flex: 1; min-width: 0; width: 100%; font-size: 12px; padding: 8px 10px; }
+  .media-item .rm {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,122,122,0.12); color: var(--err); font-size: 14px;
+    border: none; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-family: inherit;
+  }
+  .media-count { font-size: 11px; color: var(--accent); margin-top: 6px; }
+
+  /* STRENGTH */
+  .strength { display: flex; gap: 4px; margin-top: 8px; }
+  .strength .seg { flex: 1; height: 5px; border-radius: 3px; background: var(--line); transition: background 0.3s; }
+
+  /* BUTTONS */
+  .btn-primary {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    background: linear-gradient(180deg, #3d414c, #24262d);
+    color: var(--text); font-size: 14px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 10px rgba(0,0,0,0.5);
+    transition: transform 0.1s ease, background 0.3s ease;
+    margin-top: 6px;
+  }
+  .btn-primary:hover { background: linear-gradient(180deg, #4a4e5a, #2a2d34); }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-primary.success { background: linear-gradient(180deg, #2fae66, #1c7a45); }
+
+  .btn-mini {
+    padding: 9px 14px; border: 1px solid var(--line-2);
+    background: var(--panel); color: var(--text);
+    border-radius: 9px; font-size: 12px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s ease;
+  }
+  .btn-mini:hover { border-color: var(--accent); background: var(--panel-2); }
+
+  /* PROGRESS */
+  .progress-wrap {
+    margin-top: 12px; height: 8px; border-radius: 5px;
+    background: var(--panel); overflow: hidden;
+    display: none; border: 1px solid var(--line);
+  }
+  .progress-wrap.active { display: block; }
+  .progress-fill {
+    height: 100%; width: 0%; border-radius: 5px;
+    background: linear-gradient(90deg, var(--accent), #2fae66, var(--accent));
+    background-size: 200% 100%;
+    transition: width 0.3s ease;
+    animation: progShine 1.5s linear infinite;
+  }
+  @keyframes progShine { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+  .progress-label { font-size: 10.5px; color: var(--dim); margin-top: 6px; text-align: center; min-height: 14px; }
+
+  .status { margin-top: 12px; font-size: 12.5px; text-align: center; min-height: 18px; color: var(--muted); }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  /* RADIO STACK */
+  .radio-stack { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .radio-stack label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: #c7cad2; cursor: pointer;
+    padding: 9px 12px; border-radius: 9px;
+    background: var(--panel); border: 1px solid var(--line-2);
+  }
+  .radio-stack label.checked { border-color: var(--accent); background: var(--panel-2); }
+  .radio-stack input[type="radio"] { accent-color: var(--accent); }
+
+  .suboptions { display: flex; gap: 10px; margin-top: 10px; }
+  .suboptions .so { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .suboptions label { font-size: 10.5px; color: var(--dim); }
+  select {
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 9px; color: var(--text); padding: 9px 12px;
+    font-size: 12.5px; font-family: inherit; width: 100%; cursor: pointer;
+  }
+
+  .range-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 11px; padding: 10px 14px;
+  }
+  .range-row label { font-size: 12px; color: var(--muted); min-width: 90px; }
+  .range-row input[type="range"] { flex: 1; accent-color: var(--accent); cursor: pointer; height: 4px; }
+  .range-row .val { font-size: 12px; color: var(--accent); min-width: 40px; text-align: left; font-family: 'Consolas', monospace; }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 8px; margin-top: 8px;
+  }
+  .stat-box {
+    background: var(--panel); border: 1px solid var(--line-2);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .stat-box .sk { font-size: 9.5px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; }
+  .stat-box .sv { font-size: 13px; color: var(--accent); font-weight: 700; margin-top: 3px; font-family: 'Consolas', monospace; }
+
+  /* OUTPUT */
+  .output {
+    display: none; padding: 16px; background: var(--panel-2);
+    border: 1px solid var(--line-2); border-radius: 14px;
+  }
+  .output.visible { display: block; }
+  .output .out-title { font-size: 12px; color: var(--ok); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; }
+  .output .out-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .output .out-row .btn-mini { flex: 1 1 130px; padding: 11px; }
+  .output .out-hash { font-size: 10.5px; color: var(--dim); word-break: break-all; margin-top: 12px; line-height: 1.7; }
+
+  /* SEAL */
+  .seal {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(6,7,9,0); pointer-events: none;
+    z-index: 5; border-radius: 18px;
+    transition: background 0.35s ease;
+  }
+  .seal.active { background: rgba(6,7,9,0.7); }
+  .seal-icon {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4a4e58, #1a1b1f 75%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset, 0 8px 18px rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; transform: scale(0) rotate(-90deg); opacity: 0;
+    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease;
+  }
+  .seal.active .seal-icon { transform: scale(1) rotate(0deg); opacity: 1; }
+  .seal-icon.spinning { animation: sealSpin 1s linear infinite; }
+  @keyframes sealSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: linear-gradient(155deg, #2a2d34, var(--panel-2));
+    color: var(--text); padding: 12px 20px; border-radius: 30px;
+    font-size: 12.5px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    z-index: 1000; opacity: 0; pointer-events: none;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.ok { border: 1px solid var(--ok); }
+  .toast.err { border: 1px solid var(--err); }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 999; display: none; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(8px);
+  }
+  .modal-backdrop.visible { display: flex; animation: paneIn 0.2s ease; }
+  .modal {
+    background: linear-gradient(155deg, #2a2d34, var(--panel-2));
+    border-radius: 18px; padding: 22px;
+    max-width: 520px; width: 100%; max-height: 90vh; overflow: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal h3 { margin: 0 0 8px; color: var(--accent); font-size: 15px; }
+  .modal .modal-desc { font-size: 12.5px; color: #9aa0ab; line-height: 1.7; margin-bottom: 14px; }
+  .modal .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal .modal-actions button { flex: 1; padding: 11px; border: none; border-radius: 9px; background: linear-gradient(180deg,#3d414c,#24262d); color: var(--text); cursor: pointer; font-family: inherit; }
+
+  /* PREVIEW MODAL */
+  .preview-modal {
+    background: transparent; padding: 0; max-width: 460px;
+  }
+  .preview-stage {
+    position: relative; width: 100%; aspect-ratio: 1 / 1;
+    max-height: 65vh; border-radius: 22px; overflow: hidden;
+    background: radial-gradient(circle at 50% 40%, #1a1c22 0%, #0a0a0d 75%);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08) inset;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .preview-stage .preview-svg {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    animation: previewFloat 4s ease-in-out infinite;
+  }
+  .preview-stage .preview-svg svg {
+    width: 100%; height: 100%;
+    max-width: 100%; max-height: 100%;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+  }
+  @keyframes previewFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .preview-info {
+    margin-top: 14px; padding: 14px 16px; border-radius: 14px;
+    background: linear-gradient(155deg, #2a2d34, var(--panel-2));
+    box-shadow: 0 10px 24px rgba(0,0,0,0.5);
+  }
+  .preview-info .pi-badge {
+    display: inline-block; font-size: 10px; letter-spacing: 1.5px;
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid var(--accent); color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .preview-info .pi-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+  .preview-info .pi-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .preview-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .preview-actions button {
+    flex: 1; padding: 11px; border: none; border-radius: 10px;
+    background: linear-gradient(180deg, #3d414c, #24262d);
+    color: var(--text); cursor: pointer; font-family: inherit;
+    font-size: 12.5px; font-weight: 600;
+  }
+  .preview-actions button.primary { background: linear-gradient(180deg, #a855f7, #7c3aed); color: #fff; }
+
+  .hint {
+    margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--dim); line-height: 1.85;
+    position: relative; z-index: 2;
+  }
+  .hint code { color: var(--accent); font-family: 'Consolas', monospace; font-size: 10.5px; }
+
+  .presets-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .preset-btn {
+    padding: 7px 12px; border-radius: 20px;
+    background: var(--panel); border: 1px solid var(--line-2);
+    color: var(--muted); font-size: 11px; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .preset-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  @media (max-width: 480px) {
+    .type-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .type-chip .svg-wrap { max-height: 70px; }
+    .type-chip .svg-wrap svg { max-width: 64px; max-height: 64px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .vault { padding: 18px 14px 16px; }
+  }
 </style>
 </head>
 <body>
-<div class="bg"></div>
-<canvas id="bgc"></canvas>
-<div id="uIcon">🔒</div>
-<div class="header"><div class="crown">👑</div><h1>ROYAL VAULT</h1><div class="sub" id="sub"></div></div>
-<div class="container">
-  <div id="login" class="card">
-    <input type="password" id="pass" autocomplete="off">
-    <button class="main-btn" id="goBtn"></button>
-    <div class="err" id="err"></div>
-  </div>
-  <div id="res"></div>
+
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="brand" id="brandEl">🔒 VAULT CREATOR</div>
+      <div class="ver">v8.0 — NRS SHAPES</div>
+    </div>
+    <div class="actions">
+      <button type="button" class="icon-btn" id="presetsBtn" title="Presets">⚡</button>
+      <button type="button" class="icon-btn" id="helpBtn" title="Help">?</button>
+      <div class="pill">PRO</div>
+    </div>
+  </header>
+
+  <section class="vault" id="vaultPanel">
+    <h1 id="vaultTitle">🔒 إنشاء خزنة مشفّرة</h1>
+    <p class="sub">AES-256-GCM + PBKDF2 + HMAC + gzip — أشكال NRS — كل شيء داخل المتصفح.</p>
+
+    <nav class="tabs-strip" id="tabsStrip">
+      <button type="button" class="tab active" data-tab="basic">📦 أساسي</button>
+      <button type="button" class="tab" data-tab="security">🛡️ أمان</button>
+      <button type="button" class="tab" data-tab="theme">🎨 ثيمات</button>
+      <button type="button" class="tab" data-tab="delivery">🚀 تسليم</button>
+      <button type="button" class="tab" data-tab="interactive">🎮 تفاعلي</button>
+      <button type="button" class="tab" data-tab="advanced">⚙️ متقدم</button>
+      <button type="button" class="tab" data-tab="info">📊 معلومات</button>
+    </nav>
+
+    <!-- BASIC -->
+    <div class="pane visible" data-pane="basic">
+      <div class="field">
+        <span class="label">نوع الخزنة <span class="tip" id="shapeCount">— شكل</span></span>
+        <div class="type-grid" id="typeGrid"></div>
+      </div>
+
+      <div class="field">
+        <span class="label">الرسالة السرية <span class="tip" id="msgStats">0 حرف</span></span>
+        <div class="input-wrap">
+          <textarea id="msgInput" placeholder="اكتب اللي عايز الشخص يشوفه..." maxlength="20000" class="has-icon"></textarea>
+          <span class="input-icon">✉️</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">ملفات مرفقة <span class="tip">اختياري</span></span>
+        <div class="file-drop" id="fileDrop">
+          <span class="drop-icon">📎</span>
+          <strong>اضغط</strong> أو اسحب الملفات هنا
+        </div>
+        <input type="file" id="fileInput" multiple>
+        <div class="media-grid" id="mediaGrid"></div>
+        <div class="media-count" id="mediaCount"></div>
+      </div>
+
+      <div class="field">
+        <span class="label">رسالة قبل الرمز</span>
+        <div class="input-wrap">
+          <input type="text" id="preMessageInput" placeholder="في حاجة مستخبية ليك 👀" maxlength="200" class="has-icon">
+          <span class="input-icon">💬</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">الرمز السري <span class="tip">حساس</span></span>
+        <div class="input-wrap">
+          <input type="text" id="codeInput" placeholder="مثال: 2580 أو كلمة قوية" autocomplete="off" spellcheck="false" class="has-icon">
+          <span class="input-icon">🔑</span>
+        </div>
+        <div class="strength">
+          <div class="seg" id="seg1"></div>
+          <div class="seg" id="seg2"></div>
+          <div class="seg" id="seg3"></div>
+          <div class="seg" id="seg4"></div>
+        </div>
+        <div class="hint-line" id="strengthHint">قوة الرمز: —</div>
+      </div>
+
+      <div class="field">
+        <span class="label">تأكيد الرمز</span>
+        <div class="input-wrap">
+          <input type="text" id="codeConfirmInput" placeholder="اكتب نفس الرمز تاني" autocomplete="off" spellcheck="false" class="has-icon">
+          <span class="input-icon">✓</span>
+        </div>
+        <div class="hint-line" id="codeHint"></div>
+      </div>
+
+      <button type="button" class="btn-primary" id="createBtn">إنشاء الملف</button>
+      <div class="progress-wrap" id="progressWrap"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel"></div>
+      <div class="status" id="statusMsg"></div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="pane" data-pane="security">
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">فتحة واحدة بس</div><div class="tr-desc">الملف يفتح مرة واحدة</div></div>
+          <input type="checkbox" id="oneTimeToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">قفل بعد المحاولات</div><div class="tr-desc">5 محاولات، بعدها قفل 30s يتضاعف</div></div>
+          <input type="checkbox" id="rateLimitToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">تاريخ صلاحية</div><div class="tr-desc">الملف يبطل بعد تاريخ</div></div>
+          <input type="checkbox" id="expiryToggle"><span class="sw"></span>
+        </label>
+        <input type="datetime-local" id="expiryInput" style="margin-top:8px;display:none;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">سؤال أمان</div><div class="tr-desc">سؤال + إجابة قبل الرمز</div></div>
+          <input type="checkbox" id="sqToggle"><span class="sw"></span>
+        </label>
+        <div id="sqFields" style="display:none;margin-top:8px;">
+          <input type="text" id="sqQuestion" placeholder="السؤال" maxlength="200" style="margin-bottom:6px;">
+          <input type="text" id="sqAnswer" placeholder="الإجابة" maxlength="200">
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">HMAC توقيع</div><div class="tr-desc">يكشف أي تعديل</div></div>
+          <input type="checkbox" id="hmacToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Anti-Debug</div><div class="tr-desc">يكتشف فتح DevTools</div></div>
+          <input type="checkbox" id="antiDebugToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Watermark</div><div class="tr-desc">ختم مالك على الحمولة</div></div>
+          <input type="checkbox" id="watermarkToggle"><span class="sw"></span>
+        </label>
+        <input type="text" id="watermarkText" placeholder="نص الختم" maxlength="100" style="margin-top:8px;display:none;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Work-Key Mode</div><div class="tr-desc">620k iterations</div></div>
+          <input type="checkbox" id="workKeyToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Kill-Switch</div><div class="tr-desc">HMAC فشل مرتين → تحترق</div></div>
+          <input type="checkbox" id="burnToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">بصمة الجهاز</div><div class="tr-desc">يربط الملف بجهاز واحد</div></div>
+          <input type="checkbox" id="deviceBindToggle"><span class="sw"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- THEME -->
+    <div class="pane" data-pane="theme">
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">احتفال بعد الفتح</div><div class="tr-desc">تأثير بصري</div></div>
+          <input type="checkbox" id="celebrationToggle" checked><span class="sw"></span>
+        </label>
+        <div class="radio-stack" id="celebOptions">
+          <label><input type="radio" name="celebMode" value="confetti" checked> 🎊 Confetti</label>
+          <label><input type="radio" name="celebMode" value="glow"> ✨ توهج</label>
+          <label><input type="radio" name="celebMode" value="fireworks"> 🎆 ألعاب نارية</label>
+          <label><input type="radio" name="celebMode" value="snow"> ❄️ ثلج</label>
+          <label><input type="radio" name="celebMode" value="hearts"> 💖 قلوب</label>
+          <label><input type="radio" name="celebMode" value="matrix"> 🟢 Matrix</label>
+          <label><input type="radio" name="celebMode" value="bubbles"> 🫧 فقاعات</label>
+          <label><input type="radio" name="celebMode" value="custom"> ✏️ مطر مخصص</label>
+        </div>
+        <input type="text" id="celebCustomInput" placeholder="مثلاً: ✨✨✨" style="margin-top:10px;display:none;">
+        <div class="suboptions" id="rainControls" style="display:none;">
+          <div class="so"><label>سرعة</label>
+            <select id="rainSpeedSelect"><option value="slow">بطيئة</option><option value="normal" selected>عادية</option><option value="fast">سريعة</option></select>
+          </div>
+          <div class="so"><label>كثافة</label>
+            <select id="rainDensitySelect"><option value="light">خفيفة</option><option value="normal" selected>عادية</option><option value="heavy">كثيفة</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">صوت عند الفتح</div><div class="tr-desc">نغمة نجاح</div></div>
+          <input type="checkbox" id="soundToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">TTS</div><div class="tr-desc">القارئ الصوتي</div></div>
+          <input type="checkbox" id="ttsToggle"><span class="sw"></span>
+        </label>
+        <input type="text" id="ttsText" placeholder="مبروك!" maxlength="200" style="margin-top:8px;display:none;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">خلفية متحركة</div><div class="tr-desc">جزيئات</div></div>
+          <input type="checkbox" id="animatedBgToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Splash</div><div class="tr-desc">شاشة تمهيدية</div></div>
+          <input type="checkbox" id="splashToggle" checked><span class="sw"></span>
+        </label>
+        <input type="text" id="splashText" placeholder="من Redz 💌" maxlength="120" style="margin-top:8px;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Scroll Gate</div><div class="tr-desc">لازم يمرر لقبول الشروط</div></div>
+          <input type="checkbox" id="scrollGateToggle"><span class="sw"></span>
+        </label>
+        <input type="text" id="scrollGateText" placeholder="نص الاتفاقية" maxlength="2000" style="margin-top:8px;display:none;">
+      </div>
+    </div>
+
+    <!-- DELIVERY -->
+    <div class="pane" data-pane="delivery">
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Steganography</div><div class="tr-desc">إخفاء في PNG بـ LSB</div></div>
+          <input type="checkbox" id="stegoToggle"><span class="sw"></span>
+        </label>
+        <input type="file" id="stegoCoverInput" accept="image/png,image/jpeg" style="margin-top:8px;display:none;">
+        <div class="hint-line" id="stegoHint"></div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">PIN منفصل</div><div class="tr-desc">يتطلب PIN إضافي</div></div>
+          <input type="checkbox" id="pinToggle"><span class="sw"></span>
+        </label>
+        <input type="text" id="pinInput" placeholder="PIN (4+ أرقام)" maxlength="20" style="margin-top:8px;display:none;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">اسم ملف مخصص</div><div class="tr-desc">بدل vault_gift.html</div></div>
+          <input type="checkbox" id="filenameToggle"><span class="sw"></span>
+        </label>
+        <input type="text" id="filenameInput" placeholder="secret-vault.html" maxlength="80" style="margin-top:8px;display:none;">
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">روابط احتياطية</div><div class="tr-desc">حتى 3 روابط</div></div>
+          <input type="checkbox" id="fallbackToggle"><span class="sw"></span>
+        </label>
+        <div id="fallbackFields" style="display:none;margin-top:8px;">
+          <input type="text" id="fallback1" placeholder="https://..." maxlength="500" style="margin-bottom:6px;">
+          <input type="text" id="fallback2" placeholder="https://..." maxlength="500" style="margin-bottom:6px;">
+          <input type="text" id="fallback3" placeholder="https://..." maxlength="500">
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">إيصال فتح</div><div class="tr-desc">ملخص بعد الفتح</div></div>
+          <input type="checkbox" id="receiptToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Copy Message</div><div class="tr-desc">زر نسخ للرسالة</div></div>
+          <input type="checkbox" id="copyMsgToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE -->
+    <div class="pane" data-pane="interactive">
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Puzzle فتح</div><div class="tr-desc">اضغط على الدوائر بالتسلسل</div></div>
+          <input type="checkbox" id="puzzleToggle"><span class="sw"></span>
+        </label>
+        <div class="suboptions" id="puzzleOpts" style="display:none;">
+          <div class="so"><label>عدد النقاط</label>
+            <select id="puzzleCount"><option value="3">3</option><option value="5" selected>5</option><option value="7">7</option></select>
+          </div>
+          <div class="so"><label>الصعوبة</label>
+            <select id="puzzleDiff">
+              <option value="easy">سهل</option>
+              <option value="normal" selected>عادي</option>
+              <option value="hard">صعب</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Typewriter</div><div class="tr-desc">الرسالة حرف حرف</div></div>
+          <input type="checkbox" id="typewriterToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">عد تنازلي 3-2-1</div><div class="tr-desc">قبل كشف المحتوى</div></div>
+          <input type="checkbox" id="countdownToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Math Gate</div><div class="tr-desc">سؤال رياضي</div></div>
+          <input type="checkbox" id="mathToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Shake to Unlock</div><div class="tr-desc">هز الموبايل 5 مرات</div></div>
+          <input type="checkbox" id="shakeToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">أصوات تفاعلية</div><div class="tr-desc">نقرات، أخطاء، نجاح</div></div>
+          <input type="checkbox" id="uiSoundsToggle" checked><span class="sw"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- ADVANCED -->
+    <div class="pane" data-pane="advanced">
+      <div class="field">
+        <span class="label">المقاييس</span>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="sk">Algorithm</div><div class="sv">AES-256-GCM</div></div>
+          <div class="stat-box"><div class="sk">KDF</div><div class="sv" id="statKdf">PBKDF2-310k</div></div>
+          <div class="stat-box"><div class="sk">HMAC</div><div class="sv">SHA-256</div></div>
+          <div class="stat-box"><div class="sk">Compress</div><div class="sv">gzip</div></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Custom Iterations</div><div class="tr-desc">تحكم دقيق</div></div>
+          <input type="checkbox" id="customIterToggle"><span class="sw"></span>
+        </label>
+        <div class="range-row" id="iterRangeRow" style="display:none;margin-top:8px;">
+          <label>Iterations</label>
+          <input type="range" id="iterRange" min="100000" max="2000000" step="50000" value="310000">
+          <span class="val" id="iterVal">310k</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Custom Salt Size</div><div class="tr-desc">حجم الملح</div></div>
+          <input type="checkbox" id="customSaltToggle"><span class="sw"></span>
+        </label>
+        <div class="range-row" id="saltRangeRow" style="display:none;margin-top:8px;">
+          <label>Salt bytes</label>
+          <input type="range" id="saltRange" min="8" max="64" step="8" value="16">
+          <span class="val" id="saltVal">16</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Obfuscate JS</div><div class="tr-desc">Child يخرج مشفّر</div></div>
+          <input type="checkbox" id="obfuscateToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Force HTTPS</div><div class="tr-desc">يرفض http://</div></div>
+          <input type="checkbox" id="httpsOnlyToggle"><span class="sw"></span>
+        </label>
+      </div>
+      <div class="field">
+        <label class="toggle-row">
+          <div class="tr-text"><div class="tr-title">Time Window</div><div class="tr-desc">يفتح في نافذة زمنية</div></div>
+          <input type="checkbox" id="timeWindowToggle"><span class="sw"></span>
+        </label>
+        <div id="timeWindowFields" style="display:none;margin-top:8px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">من</label>
+          <input type="datetime-local" id="timeFrom" style="margin-bottom:6px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">إلى</label>
+          <input type="datetime-local" id="timeTo">
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="pane" data-pane="info">
+      <div class="hint" style="margin-top:0;border-top:none;padding-top:0;">
+        <p style="margin:0 0 10px;"><strong style="color:var(--accent);">Vault Creator v8.0 — NRS Shapes</strong></p>
+        <p style="margin:0 0 8px;" id="infoShapeCount">— شكل محمّل</p>
+        <p style="margin:0 0 8px;">🔐 PBKDF2-310k/620k + AES-GCM-256 + HMAC-SHA-256 + gzip</p>
+        <p style="margin:0 0 8px;">🎮 Puzzle, Typewriter, Countdown, Shake, Math gate</p>
+        <p style="margin:0 0 8px;">🚀 Stego, PIN, Fallback URLs, Receipt</p>
+        <p style="margin:0 0 8px;">🛡️ Device bind, Expiry, Anti-debug, Kill-switch, Time window</p>
+        <p style="margin:0;">كل التشفير داخل المتصفح — لا سيرفر، لا تتبع.</p>
+      </div>
+      <div class="field">
+        <span class="label">الميزات النشطة</span>
+        <div class="stats-grid" id="activeFeatures"></div>
+      </div>
+    </div>
+
+    <div class="hint">
+      * التشفير داخل المتصفح فقط — لا سيرفر.<br>
+      * الرمز لا يُخزَّن — لو نُسيه، الملف لا يُفتح.<br>
+      * v8: أشكال NRS + AES-GCM-256 + HMAC + gzip.
+    </div>
+
+    <div class="seal" id="sealOverlay"><div class="seal-icon" id="sealIcon">🔒</div></div>
+  </section>
+
+  <section class="output" id="outputPanel">
+    <div class="out-title">✔ تم إنشاء الملف</div>
+    <div class="out-row">
+      <button type="button" class="btn-mini" id="dlAgainBtn">⬇ تحميل تاني</button>
+      <button type="button" class="btn-mini" id="shareBtn">🔗 مشاركة</button>
+      <button type="button" class="btn-mini" id="copyLinkBtn">📋 نسخ الرابط</button>
+      <button type="button" class="btn-mini" id="newVaultBtn">🆕 خزنة جديدة</button>
+    </div>
+    <div class="out-hash" id="outHash"></div>
+  </section>
 </div>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modal"></div></div>
+<div class="modal-backdrop" id="previewBackdrop"><div class="modal preview-modal" id="previewModal"></div></div>
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════ ملف الأشكال الخارجي ═══════════ -->
+<script src="nrs-shapes.js"></script>
+
+<!-- ═══════════ كود الـ parent ═══════════ -->
 <script>
-const SALT = "%%SALT%%"; const IV = "%%IV%%"; const CIPHER = "%%CIPHER%%"; const VAULT_ID = "%%VAULT_ID%%"; const VERSION = "5"; const ITER = "%%ITER%%"; const KEYFILE_HASH = "%%KEYFILE_HASH%%";
-var AR = %%ISAR%%;
-function T(a, b) { return AR ? a : b; }
-var enc = new TextEncoder();
-var fails = 0, busy = false, idleTimer = null, hiddenAt = 0, totps = [], tick = null;
-var UNLOCK = T('فتح الخزنة', 'Unlock');
-var MASK_TXT = '••••••••';
-var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-function byId(i) { return document.getElementById(i); }
-function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined && txt !== null) e.textContent = txt; return e; }
-function fromB64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
-function setErr(t) { byId('err').textContent = t; }
+(() => {
+  'use strict';
 
-(function init() {
-  document.documentElement.lang = AR ? 'ar' : 'en';
-  document.documentElement.dir = AR ? 'rtl' : 'ltr';
-  byId('pass').placeholder = T('أدخل مفتاح الخزنة', 'Enter vault key');
-  byId('goBtn').textContent = UNLOCK;
-  var t = T('خزنة مشفرة — لا تغادر جهازك', 'Encrypted vault — stays on your device'), el = byId('sub'), i = 0;
-  if (REDUCED) { el.textContent = t; } else { (function s() { el.textContent = t.substring(0, i++); if (i <= t.length) setTimeout(s, 35); })(); }
-  if (!REDUCED) {
-    var cv = byId('bgc'), cx = cv.getContext('2d'), W, H, ps = [];
-    var rs = function () { W = cv.width = innerWidth; H = cv.height = innerHeight; }; rs(); addEventListener('resize', rs);
-    for (var k = 0; k < 30; k++) ps.push({ x: Math.random() * W, y: Math.random() * H, r: 1 + Math.random() * 2.2, v: 0.15 + Math.random() * 0.5, a: 0.15 + Math.random() * 0.35 });
-    var col = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#D4AF37';
-    (function f() {
-      cx.clearRect(0, 0, W, H);
-      ps.forEach(function (p) { p.y -= p.v; if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; } cx.globalAlpha = p.a; cx.fillStyle = col; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.283); cx.fill(); });
-      requestAnimationFrame(f);
-    })();
+  // ═══════════════════════════════════════════════════════════
+  // NRS PALETTE — ألوان تكميلية لكل شكل
+  // ═══════════════════════════════════════════════════════════
+  const NRS_PALETTE = [
+    '#a855f7','#00e5a0','#ffaa00','#ff00e5','#80e5ff',
+    '#a8ff00','#ff2d2d','#00ffd0','#ffd93d','#ff0044',
+    '#7c5cff','#00ff9d','#a855f7','#00ffff','#ff0080',
+    '#ff9900','#8090b8','#00ffd0','#00ff88','#ffd93d',
+    '#e0b3ff','#00ffff','#ff8080','#a855f7','#ffe066',
+    '#ff00e5','#00f5ff','#ffb84d','#80e5ff','#a855f7',
+    '#ff9500','#ff00e5','#b8ff00','#ff00ff','#00ff99',
+    '#a8ff00','#7c5cff','#00b8ff','#ff2d6b','#ffd93d',
+    '#00f5ff','#00ffa8','#ff7700','#ff00b8','#80ffb8',
+    '#ff00b8','#00ffff','#ff4400','#00ff88','#ff00e5',
+    '#ff8080','#00ff88','#ff6b00','#00e676','#7c4dff',
+    '#ffd93d','#00ffff','#ff5c33','#00ff88','#ff00a8',
+    '#a855f7','#00ffd0','#ff00b8','#ffd93d','#00ffff'
+  ];
+
+  const $ = id => document.getElementById(id);
+  const state = {
+    selectedType: 'nrs-0',
+    shapeIndex: 0,
+    mediaItems: [],
+    lastBlob: null,
+    lastBlobUrl: null,
+    lastFilename: 'vault_gift.html',
+    stegoCover: null,
+    fingerprint: null
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // UTILS
+  // ═══════════════════════════════════════════════════════════
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const randHex = n => Array.from(crypto.getRandomValues(new Uint8Array(n))).map(b => b.toString(16).padStart(2,'0')).join('');
+  const jsonSafe = v => JSON.stringify(v).replace(/</g, '\\u003C');
+  const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+  function toB64(buf) {
+    const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    let bin = ''; const CH = 0x8000;
+    for (let i = 0; i < bytes.length; i += CH) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    return btoa(bin);
   }
-})();
-
-async function decryptVault(pass) {
-  var iter = parseInt(ITER, 10) || 310000;
-  var base = await crypto.subtle.importKey('raw', enc.encode(pass), { name: 'PBKDF2' }, false, ['deriveKey']);
-  var key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: fromB64(SALT), iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-  var params = { name: 'AES-GCM', iv: fromB64(IV), additionalData: enc.encode('KEYKEEP|v5|' + VAULT_ID) };
-  var plain = await crypto.subtle.decrypt(params, key, fromB64(CIPHER));
-  var ds = new DecompressionStream('gzip'); var w = ds.writable.getWriter(); w.write(new Uint8Array(plain)); w.close();
-  var out = await new Response(ds.readable).arrayBuffer();
-  return JSON.parse(new TextDecoder().decode(out));
-}
-
-function b32(s) {
-  var A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; s = String(s).toUpperCase().replace(/[ =-]/g, ''); if (!s) return null;
-  var bits = 0, buf = 0, out = [];
-  for (var i = 0; i < s.length; i++) { var v = A.indexOf(s[i]); if (v < 0) return null; buf = (buf << 5) | v; bits += 5; if (bits >= 8) { bits -= 8; out.push((buf >> bits) & 255); } buf &= (1 << bits) - 1; }
-  return new Uint8Array(out);
-}
-function parseTotp(inp) {
-  inp = String(inp).trim(); var d = 6, p = 30, alg = 'SHA-1', sec = inp;
-  if (/^otpauth:\/\//i.test(inp)) {
-    var q = inp.indexOf('?'); var ps = new URLSearchParams(q >= 0 ? inp.substring(q + 1) : '');
-    sec = ps.get('secret') || ''; var dd = parseInt(ps.get('digits'), 10); if (dd >= 6 && dd <= 8) d = dd;
-    var pp = parseInt(ps.get('period'), 10); if (pp >= 15 && pp <= 120) p = pp;
-    var a = (ps.get('algorithm') || '').toUpperCase(); if (a === 'SHA256') alg = 'SHA-256'; else if (a === 'SHA512') alg = 'SHA-512';
+  function fromB64(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
   }
-  var k = b32(sec); return k && k.length ? { k: k, d: d, p: p, a: alg } : null;
-}
-async function totpCode(t, now) {
-  var c = Math.floor(now / 1000 / t.p), m = new Uint8Array(8);
-  for (var i = 7; i >= 0; i--) { m[i] = c & 255; c = Math.floor(c / 256); }
-  var key = await crypto.subtle.importKey('raw', t.k, { name: 'HMAC', hash: t.a }, false, ['sign']);
-  var h = new Uint8Array(await crypto.subtle.sign('HMAC', key, m)); var o = h[h.length - 1] & 15;
-  var bin = ((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3];
-  var s = String(bin % Math.pow(10, t.d)); while (s.length < t.d) s = '0' + s; return s;
-}
-function fmtCode(s) { var h = Math.ceil(s.length / 2); return s.substring(0, h) + ' ' + s.substring(h); }
-async function runTick() {
-  var now = Date.now();
-  for (var i = 0; i < totps.length; i++) {
-    var e = totps[i], rem = e.t.p - (Math.floor(now / 1000) % e.t.p);
-    e.code.textContent = fmtCode(await totpCode(e.t, now)); e.bar.style.width = (rem / e.t.p * 100) + '%'; e.sec.textContent = rem + 's';
+  async function sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
+  async function hashStr(s) {
+    const h = await sha256(new TextEncoder().encode(s));
+    return Array.from(h).map(b => b.toString(16).padStart(2,'0')).join('');
   }
-}
-
-function isSecret(key, list) {
-  if (list) return list.indexOf(key) >= 0;
-  return /password|pass|cvv|pin|seed|secret|كلمة المرور|رقم البطاقة|العبارة/i.test(key);
-}
-function copyText(t, btn) {
-  function done() { var o = btn.textContent; btn.textContent = '✔'; setTimeout(function () { btn.textContent = o; }, 1200); setTimeout(function () { try { navigator.clipboard.writeText(' '); } catch (e) {} }, 30000); }
-  function fallback() { var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(ta); }
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
-}
-function toBlob(item) {
-  var mime = item.mime || 'application/octet-stream', b64 = item.data || '';
-  if (b64.indexOf('data:') === 0) { var m = /^data:([^;,]*)/.exec(b64); if (m && m[1]) mime = m[1]; b64 = b64.substring(b64.indexOf(',') + 1); }
-  return new Blob([fromB64(b64)], { type: mime });
-}
-function saveBlob(blob, name) {
-  var url = URL.createObjectURL(blob), a = document.createElement('a');
-  a.href = url; a.download = name || 'file'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
-}
-function addFx(el, i) { if (!REDUCED) { el.classList.add('fadein'); el.style.animationDelay = (i * 80) + 'ms'; } return el; }
-
-function show(data) {
-  byId('login').style.display = 'none';
-  var box = byId('res'); box.textContent = ''; box.style.display = 'block';
-  var n = 0;
-  if (data.expires && Date.now() > data.expires) {
-    var ex = mk('div', 'card'); ex.appendChild(mk('div', 'title', T('انتهت صلاحية هذه الخزنة', 'This vault has expired')));
-    ex.appendChild(mk('div', 'meta', new Date(data.expires).toLocaleString())); box.appendChild(addFx(ex, 0)); return;
+  async function gzipCompress(bytes) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try {
+      const cs = new CompressionStream('gzip');
+      const w = cs.writable.getWriter(); w.write(bytes); w.close();
+      return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+    } catch { return null; }
   }
-  var head = mk('div', 'card');
-  if (data.title) head.appendChild(mk('div', 'title', data.title));
-  var info = [];
-  if (data.created) info.push(T('أُنشئت: ', 'Created: ') + data.created);
-  if (data.expires) info.push(T('تنتهي: ', 'Expires: ') + new Date(data.expires).toLocaleDateString());
-  if (info.length) head.appendChild(mk('div', 'meta', info.join('  •  ')));
-  if (data.title || info.length) box.appendChild(addFx(head, n++));
-  var secrets = Array.isArray(data.secret) ? data.secret : null;
-  var tl = Array.isArray(data.totp) ? data.totp : [];
-  var f = data.data || {};
-  var keys = Object.keys(f).filter(function (k) { return f[k]; });
-  tl.forEach(function (k) {
-    var t = f[k] ? parseTotp(f[k]) : null; if (!t) return;
-    var c = mk('div', 'card'); c.appendChild(mk('div', 'key', '🔢 ' + k));
-    var code = mk('div', 'code', '------'), sec = mk('div', 'meta', ''), bar = mk('div', 'bar'), fill = mk('i'); bar.appendChild(fill);
-    var cp = mk('button', 'mini', '📋'); cp.onclick = async function () { copyText(await totpCode(t, Date.now()), cp); };
-    c.appendChild(code); c.appendChild(bar); c.appendChild(sec); c.appendChild(cp); box.appendChild(addFx(c, n++));
-    totps.push({ t: t, code: code, bar: fill, sec: sec });
+  async function deriveKey(password, saltBytes, usage, iterations) {
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), { name:'PBKDF2' }, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt: saltBytes, iterations, hash:'SHA-256' },
+      baseKey, { name:'AES-GCM', length:256 }, false, [usage]
+    );
+  }
+  async function hmacSign(keyBytes, dataBytes) {
+    const k = await crypto.subtle.importKey('raw', keyBytes, { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
+    return new Uint8Array(await crypto.subtle.sign('HMAC', k, dataBytes));
+  }
+  async function computeFingerprint() {
+    const parts = [
+      navigator.userAgent, navigator.language,
+      screen.width + 'x' + screen.height + 'x' + screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency || 0,
+      navigator.platform || '',
+      navigator.maxTouchPoints || 0
+    ];
+    return (await hashStr(parts.join('|'))).slice(0, 32);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TOAST
+  // ═══════════════════════════════════════════════════════════
+  const toast = $('toast');
+  let toastTimer = null;
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3000);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MODAL
+  // ═══════════════════════════════════════════════════════════
+  const modalBackdrop = $('modalBackdrop');
+  const modal = $('modal');
+  function openModal(html) { modal.innerHTML = html; modalBackdrop.classList.add('visible'); }
+  function closeModal() { modalBackdrop.classList.remove('visible'); }
+  modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+
+  $('helpBtn').addEventListener('click', () => {
+    openModal(`
+      <h3>📖 Vault Creator v8</h3>
+      <div class="modal-desc">
+        أداة لإنشاء خزنة HTML مشفّرة بالكامل في المتصفح. أشكال NRS جاهزة.<br><br>
+        <strong>الخطوات:</strong><br>
+        1. اختر شكل من الأشكال المتاحة<br>
+        2. اكتب رسالتك + ارفق ملفات<br>
+        3. اختر رمز سري قوي<br>
+        4. اضبط الأمان<br>
+        5. اضغط "إنشاء الملف"<br>
+        6. ابعث الملف + الرمز<br><br>
+        <strong>اختصارات:</strong><br>
+        Ctrl+Enter = إنشاء<br>
+        Shift+? = مساعدة<br>
+        Alt+1..7 = تبديل التبويبات
+      </div>
+      <div class="modal-actions"><button type="button" onclick="document.getElementById('modalBackdrop').classList.remove('visible')">حسناً</button></div>
+    `);
   });
-  if (keys.length) {
-    var card = mk('div', 'card');
-    keys.forEach(function (k) {
-      var v = String(f[k]), hide = isSecret(k, secrets), shown = !hide;
-      var row = mk('div', 'row'), val = mk('span', 'val', hide ? MASK_TXT : v), tools = mk('span', 'tools');
-      if (hide) {
-        var eye = mk('button', 'mini', '👁'); eye.setAttribute('aria-label', T('إظهار', 'Reveal'));
-        eye.onclick = function () { shown = !shown; val.classList.remove('flip'); void val.offsetWidth; if (!REDUCED) val.classList.add('flip'); setTimeout(function () { val.textContent = shown ? v : MASK_TXT; }, REDUCED ? 0 : 150); };
-        tools.appendChild(eye);
-      }
-      var cp = mk('button', 'mini', '📋'); cp.setAttribute('aria-label', T('نسخ', 'Copy')); cp.onclick = function () { copyText(v, cp); }; tools.appendChild(cp);
-      row.appendChild(mk('span', 'key', k)); row.appendChild(val); row.appendChild(tools); card.appendChild(row);
+
+  $('presetsBtn').addEventListener('click', () => {
+    openModal(`
+      <h3>⚡ Presets سريعة</h3>
+      <div class="modal-desc">اختر preset لضبط الإعدادات فورًا.</div>
+      <div class="presets-row" id="presetsGrid">
+        <button type="button" class="preset-btn" data-preset="quick">⚡ سريع</button>
+        <button type="button" class="preset-btn" data-preset="paranoid">🛡️ Paranoid</button>
+        <button type="button" class="preset-btn" data-preset="hacker">💀 هاكر</button>
+        <button type="button" class="preset-btn" data-preset="love">💌 حب</button>
+      </div>
+      <div class="modal-actions"><button type="button" onclick="document.getElementById('modalBackdrop').classList.remove('visible')">إغلاق</button></div>
+    `);
+    document.querySelectorAll('#presetsGrid .preset-btn').forEach(b => {
+      b.addEventListener('click', () => { applyPreset(b.dataset.preset); closeModal(); });
     });
-    box.appendChild(addFx(card, n++));
-  }
-  (data.media || []).forEach(function (item) {
-    var c = mk('div', 'card'); c.appendChild(mk('div', 'fname', (item.kind === 'image' ? '🖼 ' : '📎 ') + (item.name || 'file')));
-    var blob = toBlob(item);
-    if (item.kind === 'image' && /^image\//.test(blob.type)) { var img = mk('img', 'media'); img.src = URL.createObjectURL(blob); c.appendChild(img); }
-    var b = mk('button', 'fbtn', T('⬇ حفظ', '⬇ Save')); b.onclick = function () { saveBlob(blob, item.name); }; c.appendChild(b);
-    box.appendChild(addFx(c, n++));
   });
-  var lk = mk('button', 'lock', T('🔒 قفل الآن', '🔒 Lock now')); lk.onclick = function () { location.reload(); }; box.appendChild(lk);
-  if (totps.length) { runTick(); tick = setInterval(runTick, 1000); }
-  armIdle();
-}
 
-function armIdle() {
-  function reset() { clearTimeout(idleTimer); idleTimer = setTimeout(function () { location.reload(); }, 90000); }
-  ['click', 'touchstart', 'keydown', 'scroll'].forEach(function (ev) { document.addEventListener(ev, reset, { passive: true }); });
-  reset();
-}
-function cooldown(sec) {
-  var btn = byId('goBtn');
-  if (sec <= 0) { btn.disabled = false; btn.textContent = UNLOCK; return; }
-  btn.disabled = true; btn.textContent = T('انتظر ', 'Wait ') + sec + 's';
-  setTimeout(function () { cooldown(sec - 1); }, 1000);
-}
-function unlockAnim() {
-  if (REDUCED) return; var ic = byId('uIcon'); ic.textContent = '🔒'; ic.classList.remove('pop'); void ic.offsetWidth; ic.classList.add('pop');
-  setTimeout(function () { ic.textContent = '🔓'; }, 300);
-}
-async function unlock() {
-  if (busy) return;
-  var pass = byId('pass').value; if (!pass) return;
-  if (!window.crypto || !crypto.subtle) { setErr(T('⚠️ المتصفح يمنع التشفير. افتح الملف بمتصفح حديث أو عبر تطبيق KEYKEEP.', '⚠️ Browser blocks crypto. Open in a modern browser or the KEYKEEP app.')); return; }
-  busy = true; byId('goBtn').disabled = true; setErr(T('جاري فك التشفير...', 'Decrypting...'));
-  try {
-    var data = await decryptVault(pass);
-    byId('pass').value = ''; setErr(''); unlockAnim(); show(data);
-  } catch (e) {
-    fails++; setErr(T('مفتاح خاطئ أو ملف تالف', 'Wrong key or corrupted file'));
-    var lg = byId('login'); lg.classList.remove('shake'); void lg.offsetWidth; lg.classList.add('shake');
-    if (navigator.vibrate) navigator.vibrate(120);
-    cooldown(fails >= 3 ? Math.min(Math.pow(2, fails - 2), 60) : 0);
+  function applyPreset(name) {
+    const presets = {
+      quick: { hmac:true, rateLimit:true },
+      paranoid: { oneTime:true, rateLimit:true, hmac:true, antiDebug:true, burn:true, deviceBind:true, workKey:true, pinEnabled:true, pin:'1234' },
+      hacker: { antiDebug:true, hmac:true, burn:true, celebration:'matrix', sound:true, workKey:true },
+      love: { celebration:'hearts', sound:true, tts:true, splash:true, message:'رسالة من القلب 💌' }
+    };
+    const p = presets[name];
+    if (!p) return;
+    const toggleMap = {
+      oneTime:'oneTimeToggle', rateLimit:'rateLimitToggle', hmac:'hmacToggle',
+      antiDebug:'antiDebugToggle', workKey:'workKeyToggle', burn:'burnToggle',
+      deviceBind:'deviceBindToggle', sound:'soundToggle', tts:'ttsToggle',
+      splash:'splashToggle', pinEnabled:'pinToggle'
+    };
+    Object.keys(toggleMap).forEach(k => {
+      if (k in p) {
+        const el = $(toggleMap[k]);
+        if (el) { el.checked = !!p[k]; el.dispatchEvent(new Event('change')); }
+      }
+    });
+    if (p.celebration) {
+      const r = document.querySelector(`input[name="celebMode"][value="${p.celebration}"]`);
+      if (r) { r.checked = true; r.dispatchEvent(new Event('change')); }
+    }
+    if (p.pin) $('pinInput').value = p.pin;
+    if (p.message) $('msgInput').value = p.message;
+    showToast('✔ تم تطبيق preset: ' + name, 'ok');
   }
-  busy = false;
-  if (fails < 3 && byId('res').style.display !== 'block') byId('goBtn').disabled = false;
-}
-byId('goBtn').addEventListener('click', unlock);
-byId('pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') unlock(); });
-document.addEventListener('visibilitychange', function () {
-  if (document.hidden) hiddenAt = Date.now();
-  else if (hiddenAt && byId('res').style.display === 'block' && Date.now() - hiddenAt > 30000) location.reload();
-});
+
+  // ═══════════════════════════════════════════════════════════
+  // TABS
+  // ═══════════════════════════════════════════════════════════
+  const tabsStrip = $('tabsStrip');
+  tabsStrip.addEventListener('click', e => {
+    const tab = e.target.closest('.tab');
+    if (!tab || !tabsStrip.contains(tab)) return;
+    e.preventDefault();
+    const target = tab.dataset.tab;
+    if (!target) return;
+    tabsStrip.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.pane').forEach(p => {
+      p.classList.toggle('visible', p.dataset.pane === target);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // RENDER TYPE CHIPS
+  // ═══════════════════════════════════════════════════════════
+  const typeGrid = $('typeGrid');
+  const vaultPanel = $('vaultPanel');
+  const vaultTitle = $('vaultTitle');
+
+  function renderTypeChips() {
+    typeGrid.innerHTML = '';
+    if (typeof NRS_SHAPES === 'undefined' || !Array.isArray(NRS_SHAPES) || !NRS_SHAPES.length) {
+      typeGrid.innerHTML = '<div style="grid-column:1/-1;padding:24px;text-align:center;color:#ff7a7a;font-size:13px;line-height:1.8;background:rgba(255,122,122,0.08);border:1px solid rgba(255,122,122,0.3);border-radius:12px;">⚠️ ملف <code style="color:#6ee7ff">nrs-shapes.js</code> مش محمّل.<br>تأكد إنه في نفس مجلد <code style="color:#6ee7ff">vault.html</code> وأعد تحميل الصفحة.</div>';
+      console.error('[Vault] NRS_SHAPES غير معرّفة. تأكد من وجود nrs-shapes.js بجانب vault.html');
+      return;
+    }
+
+    $('shapeCount').textContent = NRS_SHAPES.length + ' شكل';
+    $('infoShapeCount').textContent = '✅ ' + NRS_SHAPES.length + ' شكل محمّل من nrs-shapes.js';
+    console.log('✅ NRS_SHAPES loaded: ' + NRS_SHAPES.length + ' shapes');
+
+    NRS_SHAPES.forEach((svgMarkup, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'type-chip' + (state.selectedType === 'nrs-' + i ? ' selected' : '');
+      chip.dataset.type = 'nrs-' + i;
+      chip.dataset.index = i;
+      chip.innerHTML = `
+        <div class="svg-wrap">${svgMarkup}</div>
+        <div class="chip-name">شكل #${i + 1}</div>
+        <button type="button" class="see-btn" data-see="${i}">👁 عرض</button>
+      `;
+      typeGrid.appendChild(chip);
+    });
+  }
+
+  typeGrid.addEventListener('click', e => {
+    const seeBtn = e.target.closest('[data-see]');
+    if (seeBtn) {
+      e.preventDefault(); e.stopPropagation();
+      openPreview(parseInt(seeBtn.dataset.see, 10));
+      return;
+    }
+    const chip = e.target.closest('.type-chip');
+    if (!chip || !typeGrid.contains(chip)) return;
+    e.preventDefault();
+    selectType('nrs-' + chip.dataset.index);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // SELECT TYPE
+  // ═══════════════════════════════════════════════════════════
+  function selectType(key) {
+    if (!key.startsWith('nrs-')) return;
+    const idx = parseInt(key.split('-')[1], 10);
+    const chip = typeGrid.querySelector(`.type-chip[data-index="${idx}"]`);
+    if (!chip) return;
+
+    state.selectedType = key;
+    state.shapeIndex = idx;
+    typeGrid.querySelectorAll('.type-chip').forEach(c => {
+      c.classList.toggle('selected', c === chip);
+    });
+
+    const accent = NRS_PALETTE[idx % NRS_PALETTE.length];
+    document.documentElement.style.setProperty('--accent', accent);
+    document.documentElement.style.setProperty('--accent2', accent);
+
+    vaultTitle.textContent = '🔒 شكل #' + (idx + 1);
+    updateActiveFeatures();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PREVIEW MODAL
+  // ═══════════════════════════════════════════════════════════
+  const previewBackdrop = $('previewBackdrop');
+  const previewModal = $('previewModal');
+  previewBackdrop.addEventListener('click', e => { if (e.target === previewBackdrop) closePreview(); });
+
+  function openPreview(idx) {
+    const svg = (typeof NRS_SHAPES !== 'undefined' && NRS_SHAPES[idx]) ? NRS_SHAPES[idx] : null;
+    if (!svg) { showToast('الشكل غير موجود', 'err'); return; }
+    const accent = NRS_PALETTE[idx % NRS_PALETTE.length];
+
+    previewModal.innerHTML = `
+      <div class="preview-stage" style="--accent:${accent};">
+        <div class="preview-svg">${svg}</div>
+      </div>
+      <div class="preview-info">
+        <div class="pi-badge">NRS SHAPE #${idx + 1}</div>
+        <div class="pi-title">🔒 شكل #${idx + 1}</div>
+        <div class="pi-desc">شكل SVG كامل الدقة — يظهر بنفس الجودة في الخزنة النهائية.</div>
+        <div class="preview-actions">
+          <button type="button" class="primary" data-choose="${idx}">اختر هذا الشكل</button>
+          <button type="button" data-close="1">إغلاق</button>
+        </div>
+      </div>
+    `;
+    previewBackdrop.classList.add('visible');
+    previewModal.querySelector('[data-close]').addEventListener('click', closePreview);
+    previewModal.querySelector('[data-choose]').addEventListener('click', () => {
+      selectType('nrs-' + idx);
+      closePreview();
+      showToast('✔ تم اختيار شكل #' + (idx + 1), 'ok');
+    });
+  }
+  function closePreview() { previewBackdrop.classList.remove('visible'); }
+
+  // ═══════════════════════════════════════════════════════════
+  // MESSAGE STATS
+  // ═══════════════════════════════════════════════════════════
+  $('msgInput').addEventListener('input', () => {
+    const v = $('msgInput').value;
+    const words = v.trim() ? v.trim().split(/\s+/).length : 0;
+    $('msgStats').textContent = v.length + ' حرف — ' + words + ' كلمة';
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // STRENGTH
+  // ═══════════════════════════════════════════════════════════
+  function scoreStrength(pw) {
+    let s = 0;
+    if (pw.length >= 4) s++;
+    if (pw.length >= 8) s++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(s, 4);
+  }
+  function renderStrength(pw) {
+    const s = scoreStrength(pw);
+    const colors = ['#ff5a5a','#ffb37a','#ffd166','#6ef7a6','#2fae66'];
+    const labels = ['ضعيف جداً','ضعيف','متوسط','قوي','قوي جداً'];
+    for (let i = 1; i <= 4; i++) {
+      $('seg' + i).style.background = i <= s ? colors[s] : 'var(--line)';
+    }
+    $('strengthHint').textContent = pw ? 'قوة الرمز: ' + labels[s] : 'قوة الرمز: —';
+    $('strengthHint').className = 'hint-line ' + (s <= 1 ? 'error' : s === 2 ? 'warn' : 'ok');
+  }
+  $('codeInput').addEventListener('input', () => {
+    renderStrength($('codeInput').value);
+    checkCodeMatch();
+  });
+
+  function checkCodeMatch() {
+    const a = $('codeInput').value, b = $('codeConfirmInput').value;
+    if (!b) {
+      $('codeHint').textContent = '';
+      $('codeHint').className = 'hint-line';
+      $('codeConfirmInput').classList.remove('mismatch');
+      return true;
+    }
+    if (a !== b) {
+      $('codeHint').textContent = 'الرمزين مش متطابقين';
+      $('codeHint').className = 'hint-line error';
+      $('codeConfirmInput').classList.add('mismatch');
+      return false;
+    }
+    $('codeHint').textContent = '✔ الرمزين متطابقين';
+    $('codeHint').className = 'hint-line ok';
+    $('codeConfirmInput').classList.remove('mismatch');
+    return true;
+  }
+  $('codeConfirmInput').addEventListener('input', checkCodeMatch);
+
+  // ═══════════════════════════════════════════════════════════
+  // CONDITIONAL UI
+  // ═══════════════════════════════════════════════════════════
+  function bindToggle(toggleId, targetId, mode) {
+    const t = $(toggleId), el = $(targetId);
+    if (!t || !el) return;
+    const update = () => {
+      el.style.display = t.checked ? (mode || 'block') : 'none';
+      const row = t.closest('.toggle-row');
+      if (row) row.classList.toggle('on', t.checked);
+    };
+    t.addEventListener('change', update);
+    update();
+  }
+  bindToggle('expiryToggle', 'expiryInput');
+  bindToggle('sqToggle', 'sqFields');
+  bindToggle('watermarkToggle', 'watermarkText');
+  bindToggle('ttsToggle', 'ttsText');
+  bindToggle('filenameToggle', 'filenameInput');
+  bindToggle('stegoToggle', 'stegoCoverInput');
+  bindToggle('fallbackToggle', 'fallbackFields');
+  bindToggle('scrollGateToggle', 'scrollGateText');
+  bindToggle('pinToggle', 'pinInput');
+  bindToggle('puzzleToggle', 'puzzleOpts', 'flex');
+  bindToggle('customIterToggle', 'iterRangeRow', 'flex');
+  bindToggle('customSaltToggle', 'saltRangeRow', 'flex');
+  bindToggle('timeWindowToggle', 'timeWindowFields');
+
+  $('iterRange').addEventListener('input', () => {
+    const v = parseInt($('iterRange').value, 10);
+    $('iterVal').textContent = (v / 1000) + 'k';
+    $('statKdf').textContent = 'PBKDF2-' + (v / 1000) + 'k';
+  });
+  $('saltRange').addEventListener('input', () => {
+    $('saltVal').textContent = $('saltRange').value;
+  });
+
+  $('stegoToggle').addEventListener('change', () => {
+    $('stegoHint').textContent = $('stegoToggle').checked ? 'اختر صورة PNG/JPEG' : '';
+  });
+  $('stegoCoverInput').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) { state.stegoCover = null; return; }
+    const r = new FileReader();
+    r.onload = () => {
+      state.stegoCover = r.result;
+      $('stegoHint').textContent = 'صورة: ' + f.name + ' (' + Math.round(f.size/1024) + 'KB)';
+    };
+    r.readAsDataURL(f);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // CELEBRATION
+  // ═══════════════════════════════════════════════════════════
+  function updateCelebUI() {
+    const checked = document.querySelector('input[name="celebMode"]:checked');
+    const mode = checked ? checked.value : 'confetti';
+    document.querySelectorAll('#celebOptions label').forEach(l => {
+      const r = l.querySelector('input');
+      l.classList.toggle('checked', r && r.checked);
+    });
+    $('celebCustomInput').style.display = mode === 'custom' ? 'block' : 'none';
+    const rainModes = ['custom', 'confetti', 'snow', 'hearts', 'matrix', 'bubbles'];
+    $('rainControls').style.display = rainModes.includes(mode) ? 'flex' : 'none';
+  }
+  document.querySelectorAll('input[name="celebMode"]').forEach(r => {
+    r.addEventListener('change', updateCelebUI);
+  });
+  $('celebrationToggle').addEventListener('change', () => {
+    $('celebOptions').style.display = $('celebrationToggle').checked ? 'flex' : 'none';
+    if (!$('celebrationToggle').checked) {
+      $('rainControls').style.display = 'none';
+      $('celebCustomInput').style.display = 'none';
+    } else {
+      updateCelebUI();
+    }
+  });
+  updateCelebUI();
+
+  // ═══════════════════════════════════════════════════════════
+  // MEDIA
+  // ═══════════════════════════════════════════════════════════
+  const FILE_ICONS = { apk:'📦', html:'🌐', htm:'🌐', py:'🐍', js:'📜', json:'🧩', pdf:'📕', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📽️', pptx:'📽️', zip:'🗜️', rar:'🗜️', '7z':'🗜️', txt:'📄', csv:'📋', mp3:'🎵', wav:'🎵', m4a:'🎵', exe:'⚙️', ipa:'📱' };
+  const getFileIcon = name => FILE_ICONS[(name||'').split('.').pop().toLowerCase()] || '📎';
+  const fmtSize = b => !b && b !== 0 ? '' : b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(1) + ' KB' : (b/1048576).toFixed(1) + ' MB';
+
+  function handleFiles(list) {
+    Array.from(list || []).forEach(file => {
+      const kind = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file';
+      const r = new FileReader();
+      r.onload = () => {
+        state.mediaItems.push({ kind, data: r.result, caption: '', name: file.name, size: file.size });
+        renderMediaGrid();
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  const fileDrop = $('fileDrop');
+  const fileInput = $('fileInput');
+  fileDrop.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
+  fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+  fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+  fileDrop.addEventListener('drop', e => {
+    e.preventDefault(); fileDrop.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+  });
+
+  function renderMediaGrid() {
+    const grid = $('mediaGrid');
+    grid.innerHTML = '';
+    state.mediaItems.forEach((item, idx) => {
+      const box = document.createElement('div');
+      box.className = 'media-item';
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      if (item.kind === 'file') thumb.textContent = getFileIcon(item.name);
+      else {
+        const el = document.createElement(item.kind === 'image' ? 'img' : 'video');
+        el.src = item.data; thumb.appendChild(el);
+      }
+      box.appendChild(thumb);
+
+      const cap = document.createElement('input');
+      cap.type = 'text'; cap.className = 'caption';
+      cap.placeholder = 'عنوان';
+      cap.value = item.caption || '';
+      cap.addEventListener('input', () => { state.mediaItems[idx].caption = cap.value; });
+
+      if (item.kind === 'file') {
+        const meta = document.createElement('div'); meta.className = 'file-meta';
+        const nm = document.createElement('div'); nm.className = 'file-name';
+        nm.textContent = item.name + (item.size ? ' · ' + fmtSize(item.size) : '');
+        meta.appendChild(nm); meta.appendChild(cap); box.appendChild(meta);
+      } else box.appendChild(cap);
+
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'rm'; rm.textContent = '✕';
+      rm.addEventListener('click', (e) => { e.stopPropagation(); state.mediaItems.splice(idx, 1); renderMediaGrid(); });
+      box.appendChild(rm);
+      grid.appendChild(box);
+    });
+    const total = state.mediaItems.reduce((s, it) => s + (it.size || 0), 0);
+    $('mediaCount').textContent = !state.mediaItems.length ? '' : state.mediaItems.length + ' ملف' + (total ? ' — ' + fmtSize(total) : '');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // CELEBRATION PARSER
+  // ═══════════════════════════════════════════════════════════
+  function splitGraphemes(str) {
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      try { return Array.from(new Intl.Segmenter('en',{granularity:'grapheme'}).segment(str), s => s.segment); } catch {}
+    }
+    return Array.from(str);
+  }
+  function looksLikeEmojiOnly(str) {
+    try { return /^(?:\p{Extended_Pictographic}|\p{Emoji_Presentation}|\uFE0F|\s)+$/u.test(str); } catch { return false; }
+  }
+  function parseCelebItems(raw) {
+    if (!raw) return [];
+    let items = raw.split(',').map(s => s.trim()).filter(Boolean);
+    if (items.length <= 1) {
+      const c = (items[0] || raw).trim();
+      if (!c) return [];
+      if (looksLikeEmojiOnly(c)) items = splitGraphemes(c).map(s => s.trim()).filter(Boolean);
+      else if (/\s/.test(c)) items = c.split(/\s+/).filter(Boolean);
+      else items = [c];
+    }
+    return items;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // READ OPTIONS
+  // ═══════════════════════════════════════════════════════════
+  function readOptions() {
+    const shapeIdx = state.shapeIndex;
+    const accent = NRS_PALETTE[shapeIdx % NRS_PALETTE.length];
+    const celebChecked = document.querySelector('input[name="celebMode"]:checked');
+    const fallbacks = [];
+    if ($('fallbackToggle').checked) {
+      ['fallback1','fallback2','fallback3'].forEach(id => {
+        const v = $(id).value.trim();
+        if (v) fallbacks.push(v);
+      });
+    }
+    const iterations = $('customIterToggle').checked ? parseInt($('iterRange').value, 10) : ($('workKeyToggle').checked ? 620000 : 310000);
+    const saltSize = $('customSaltToggle').checked ? parseInt($('saltRange').value, 10) : 16;
+
+    return {
+      type: 'nrs-' + shapeIdx,
+      shapeIndex: shapeIdx,
+      accent,
+      message: $('msgInput').value.trim(),
+      code: $('codeInput').value.trim(),
+      codeConfirm: $('codeConfirmInput').value.trim(),
+      preMessage: $('preMessageInput').value.trim() || 'في حاجة مستخبية ليك 👀',
+      oneTime: $('oneTimeToggle').checked,
+      rateLimit: $('rateLimitToggle').checked,
+      expiryEnabled: $('expiryToggle').checked,
+      expiryISO: $('expiryInput').value || '',
+      sqEnabled: $('sqToggle').checked,
+      sqQuestion: $('sqQuestion').value.trim(),
+      sqAnswer: $('sqAnswer').value.trim(),
+      hmac: $('hmacToggle').checked,
+      antiDebug: $('antiDebugToggle').checked,
+      watermark: $('watermarkToggle').checked,
+      watermarkText: $('watermarkText').value.trim(),
+      workKey: $('workKeyToggle').checked,
+      burn: $('burnToggle').checked,
+      deviceBind: $('deviceBindToggle').checked,
+      celebration: {
+        enabled: $('celebrationToggle').checked,
+        mode: celebChecked ? celebChecked.value : 'confetti',
+        items: parseCelebItems($('celebCustomInput').value),
+        speed: $('rainSpeedSelect').value,
+        density: $('rainDensitySelect').value
+      },
+      sound: $('soundToggle').checked,
+      tts: $('ttsToggle').checked,
+      ttsText: $('ttsText').value.trim() || 'تم فتح الخزنة بنجاح',
+      animatedBg: $('animatedBgToggle').checked,
+      splash: $('splashToggle').checked,
+      splashText: $('splashText').value.trim() || 'من صاحب الخزنة 💌',
+      scrollGate: $('scrollGateToggle').checked,
+      scrollGateText: $('scrollGateText').value.trim() || 'بالفتح، أنت توافق على الحفاظ على سرية المحتوى.',
+      stego: $('stegoToggle').checked,
+      pinEnabled: $('pinToggle').checked,
+      pin: $('pinInput').value.trim(),
+      customFilename: $('filenameToggle').checked,
+      filename: $('filenameInput').value.trim() || 'vault_gift.html',
+      fallbackEnabled: $('fallbackToggle').checked,
+      fallbackUrls: fallbacks,
+      receipt: $('receiptToggle').checked,
+      copyMsg: $('copyMsgToggle').checked,
+      puzzle: $('puzzleToggle').checked,
+      puzzleCount: parseInt($('puzzleCount').value, 10),
+      puzzleDiff: $('puzzleDiff').value,
+      typewriter: $('typewriterToggle').checked,
+      countdown: $('countdownToggle').checked,
+      mathGate: $('mathToggle').checked,
+      shake: $('shakeToggle').checked,
+      uiSounds: $('uiSoundsToggle').checked,
+      customIter: $('customIterToggle').checked,
+      iterations,
+      saltSize,
+      obfuscate: $('obfuscateToggle').checked,
+      httpsOnly: $('httpsOnlyToggle').checked,
+      timeWindow: $('timeWindowToggle').checked,
+      timeFrom: $('timeFrom').value || '',
+      timeTo: $('timeTo').value || '',
+      fingerprint: state.fingerprint,
+      stegoCover: state.stegoCover,
+      vaultId: randHex(10),
+      createdAt: Date.now()
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // STATUS / PROGRESS
+  // ═══════════════════════════════════════════════════════════
+  function setStatus(text, cls) {
+    $('statusMsg').textContent = text;
+    $('statusMsg').className = 'status' + (cls ? ' ' + cls : '');
+  }
+  function showProgress() { $('progressWrap').classList.add('active'); setProgress(0, ''); }
+  function setProgress(p, label) {
+    $('progressFill').style.width = p + '%';
+    $('progressLabel').textContent = label || '';
+  }
+  function hideProgressSoon() {
+    setTimeout(() => {
+      $('progressWrap').classList.remove('active');
+      $('progressLabel').textContent = '';
+    }, 900);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTIVE FEATURES
+  // ═══════════════════════════════════════════════════════════
+  function updateActiveFeatures() {
+    const opts = readOptions();
+    const feats = [];
+    const add = (name, val) => feats.push(`<div class="stat-box"><div class="sk">${name}</div><div class="sv">${val}</div></div>`);
+    add('Shape', '#' + (opts.shapeIndex + 1));
+    add('Iterations', (opts.iterations / 1000) + 'k');
+    add('Salt', opts.saltSize + 'B');
+    add('AES', 'GCM-256');
+    if (opts.hmac) add('HMAC', 'SHA-256');
+    if (opts.oneTime) add('OneTime', 'ON');
+    if (opts.rateLimit) add('RateLimit', 'ON');
+    if (opts.expiryEnabled) add('Expiry', 'ON');
+    if (opts.sqEnabled) add('Sec.Q', 'ON');
+    if (opts.watermark && opts.watermarkText) add('Watermark', 'ON');
+    if (opts.antiDebug) add('AntiDbg', 'ON');
+    if (opts.burn) add('KillSwitch', 'ON');
+    if (opts.deviceBind) add('DevBind', 'ON');
+    if (opts.stego && opts.stegoCover) add('Stego', 'PNG');
+    if (opts.pinEnabled) add('PIN', 'ON');
+    if (opts.fallbackEnabled && opts.fallbackUrls.length) add('Fallback', opts.fallbackUrls.length);
+    if (opts.puzzle) add('Puzzle', opts.puzzleCount + 'pts');
+    if (opts.typewriter) add('Typewrite', 'ON');
+    if (opts.countdown) add('Countdown', 'ON');
+    if (opts.mathGate) add('MathGate', 'ON');
+    if (opts.shake) add('Shake', 'ON');
+    if (opts.timeWindow) add('TimeWin', 'ON');
+    if (opts.sound) add('Sound', 'ON');
+    if (opts.tts) add('TTS', 'ON');
+    if (opts.obfuscate) add('Obfuscate', 'ON');
+    if (opts.httpsOnly) add('HTTPS', 'ON');
+    if (opts.scrollGate) add('ScrollGate', 'ON');
+    $('activeFeatures').innerHTML = feats.join('');
+  }
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('change', updateActiveFeatures);
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // STEGO
+  // ═══════════════════════════════════════════════════════════
+  async function embedStego(coverDataUrl, payloadStr) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, c.width, c.height);
+        const data = imgData.data;
+        const payload = new TextEncoder().encode(payloadStr);
+        const header = new Uint8Array(8);
+        header[0]=0x56; header[1]=0x4c; header[2]=0x54; header[3]=0x38;
+        header[4]=(payload.length>>>24)&0xff;
+        header[5]=(payload.length>>>16)&0xff;
+        header[6]=(payload.length>>>8)&0xff;
+        header[7]=payload.length&0xff;
+        const all = new Uint8Array(header.length + payload.length);
+        all.set(header, 0); all.set(payload, header.length);
+        const needBits = all.length * 8;
+        const capBits = Math.floor(data.length / 4) * 3;
+        if (needBits > capBits) { reject(new Error('الصورة صغيرة')); return; }
+        let bitIdx = 0;
+        for (let i = 0; i < data.length && bitIdx < needBits; i += 4) {
+          for (let ch = 0; ch < 3 && bitIdx < needBits; ch++) {
+            const byteIdx = bitIdx >> 3;
+            const bit = (all[byteIdx] >> (7 - (bitIdx & 7))) & 1;
+            data[i + ch] = (data[i + ch] & 0xFE) | bit;
+            bitIdx++;
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        c.toBlob(b => b ? resolve(b) : reject(new Error('فشل PNG')), 'image/png');
+      };
+      img.onerror = () => reject(new Error('فشل تحميل الصورة'));
+      img.src = coverDataUrl;
+    });
+  }
+
+  function softObfuscate(html) {
+    return html.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (m, code) => {
+      const obf = code
+        .replace(/\bSALT_B64\b/g, 'SA\\x4cT_B64')
+        .replace(/\bIV_B64\b/g, 'I\\x56_B64')
+        .replace(/\bCIPHER_B64\b/g, 'CIPHE\\x52_B64')
+        .replace(/\bVAULT_ID\b/g, 'VAUL\\x54_ID');
+      return m.replace(code, obf);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MAIN CREATE
+  // ═══════════════════════════════════════════════════════════
+  $('createBtn').addEventListener('click', async () => {
+    vaultPanel.classList.remove('success', 'error');
+    const opts = readOptions();
+
+    if (!opts.message && state.mediaItems.length === 0) {
+      setStatus('لازم تكتب رسالة أو ترفع ملف', 'err');
+      vaultPanel.classList.add('error'); setTimeout(() => vaultPanel.classList.remove('error'), 500);
+      return;
+    }
+    if (!opts.code) {
+      setStatus('لازم تحدد رمز سري', 'err');
+      vaultPanel.classList.add('error'); setTimeout(() => vaultPanel.classList.remove('error'), 500);
+      return;
+    }
+    if (opts.code !== opts.codeConfirm) {
+      setStatus('الرمز وتأكيد الرمز مش متطابقين', 'err');
+      checkCodeMatch();
+      vaultPanel.classList.add('error'); setTimeout(() => vaultPanel.classList.remove('error'), 500);
+      return;
+    }
+    if (opts.sqEnabled && (!opts.sqQuestion || !opts.sqAnswer)) {
+      setStatus('لازم تكمل السؤال والإجابة', 'err'); return;
+    }
+    if (opts.expiryEnabled && !opts.expiryISO) {
+      setStatus('لازم تحدد تاريخ الصلاحية', 'err'); return;
+    }
+    if (opts.watermark && !opts.watermarkText) {
+      setStatus('لازم تكتب نص الختم', 'err'); return;
+    }
+    if (opts.stego && !opts.stegoCover) {
+      setStatus('لازم تختار صورة', 'err'); return;
+    }
+    if (opts.pinEnabled && (!opts.pin || opts.pin.length < 4)) {
+      setStatus('PIN لازم 4 أرقام على الأقل', 'err'); return;
+    }
+
+    const btn = $('createBtn');
+    btn.disabled = true;
+    showProgress();
+    setStatus('جاري التشفير...', '');
+    $('sealIcon').textContent = '🔒';
+    $('sealIcon').classList.add('spinning');
+
+    try {
+      setProgress(6, 'حساب البصمة...');
+      if (!state.fingerprint) state.fingerprint = await computeFingerprint();
+      opts.fingerprint = state.fingerprint;
+      await wait(60);
+
+      setProgress(14, 'تجهيز الحمولة...');
+      const inner = {
+        message: opts.message || null,
+        media: state.mediaItems,
+        meta: {
+          vaultId: opts.vaultId,
+          createdAt: opts.createdAt,
+          fingerprint: opts.deviceBind ? state.fingerprint : null,
+          watermark: opts.watermark ? opts.watermarkText : null,
+          type: opts.type,
+          shapeIndex: opts.shapeIndex
+        }
+      };
+      const innerBytes = new TextEncoder().encode(JSON.stringify(inner));
+      const innerHash = await hashStr(JSON.stringify({ id: opts.vaultId, n: innerBytes.length }));
+
+      setProgress(24, 'ضغط gzip...');
+      let dataBytes = innerBytes;
+      let compressed = false;
+      const gz = await gzipCompress(innerBytes);
+      if (gz && gz.length < innerBytes.length) { dataBytes = gz; compressed = true; }
+      await wait(60);
+
+      const salt = crypto.getRandomValues(new Uint8Array(opts.saltSize));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      setProgress(42, 'اشتقاق المفتاح (' + opts.iterations.toLocaleString() + ' دورة)...');
+      const key = await deriveKey(opts.code, salt, 'encrypt', opts.iterations);
+      await wait(60);
+
+      setProgress(60, 'تشفير AES-GCM-256...');
+      const cipherBuf = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, dataBytes);
+      const cipherBytes = new Uint8Array(cipherBuf);
+
+      let hmacB64 = null;
+      if (opts.hmac) {
+        setProgress(70, 'توليد HMAC...');
+        const hmacKeyBytes = await sha256(new TextEncoder().encode(opts.code + '|' + opts.vaultId + '|hmac'));
+        const mac = await hmacSign(hmacKeyBytes, cipherBytes);
+        hmacB64 = toB64(mac);
+      }
+
+      setProgress(80, 'بناء الملف...');
+      const saltB64 = toB64(salt.buffer);
+      const ivB64 = toB64(iv.buffer);
+      const cipherB64 = toB64(cipherBytes);
+      const itemCount = state.mediaItems.length + (opts.message ? 1 : 0) || 1;
+
+      let html = buildChildHtml({
+        saltB64, ivB64, cipherB64, hmacB64, opts, compressed, iterations: opts.iterations, innerHash, itemCount
+      });
+
+      if (opts.obfuscate) {
+        setProgress(84, 'Obfuscating...');
+        try { html = softObfuscate(html); } catch {}
+      }
+
+      let blob;
+      let filename = opts.customFilename ? opts.filename : 'vault_gift.html';
+
+      if (opts.stego && state.stegoCover) {
+        setProgress(92, 'إخفاء في صورة...');
+        try {
+          blob = await embedStego(state.stegoCover, html);
+          filename = (opts.customFilename ? opts.filename.replace(/\.html?$/i, '') : 'vault_gift') + '.png';
+        } catch (e) {
+          blob = new Blob([html], { type: 'text/html' });
+        }
+      } else {
+        blob = new Blob([html], { type: 'text/html' });
+      }
+
+      setProgress(100, 'تم!');
+      $('sealOverlay').classList.add('active');
+      await wait(400);
+      $('sealIcon').classList.remove('spinning');
+      $('sealIcon').classList.add('done');
+
+      if (state.lastBlobUrl) URL.revokeObjectURL(state.lastBlobUrl);
+      state.lastBlob = blob;
+      state.lastFilename = filename;
+      state.lastBlobUrl = URL.createObjectURL(blob);
+
+      triggerDownload(state.lastBlobUrl, filename);
+      await wait(400);
+      $('sealOverlay').classList.remove('active');
+
+      vaultPanel.classList.add('success');
+      btn.classList.add('success');
+      setStatus('✔ تم إنشاء الملف وتحميله', 'ok');
+      showOutputPanel(blob, filename, opts);
+      hideProgressSoon();
+      playUISound('success');
+    } catch (err) {
+      console.error(err);
+      setStatus('حصل خطأ: ' + (err.message || err), 'err');
+      vaultPanel.classList.add('error'); setTimeout(() => vaultPanel.classList.remove('error'), 500);
+      $('sealIcon').classList.remove('spinning');
+      hideProgressSoon();
+      playUISound('error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function triggerDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function showOutputPanel(blob, filename, opts) {
+    const panel = $('outputPanel');
+    panel.classList.add('visible');
+    hashStr(filename + ':' + blob.size).then(h => {
+      $('outHash').textContent = 'الحجم: ' + fmtSize(blob.size) + ' • SHA-256: ' + h.slice(0, 32) + '… • ID: ' + opts.vaultId + ' • Shape: #' + (opts.shapeIndex + 1);
+    });
+    updateActiveFeatures();
+  }
+
+  $('dlAgainBtn').addEventListener('click', () => {
+    if (state.lastBlobUrl) triggerDownload(state.lastBlobUrl, state.lastFilename);
+  });
+  $('copyLinkBtn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(state.lastBlobUrl || location.href);
+      showToast('تم نسخ الرابط', 'ok');
+    } catch { showToast('فشل النسخ', 'err'); }
+  });
+  $('shareBtn').addEventListener('click', async () => {
+    if (navigator.share && state.lastBlob) {
+      try {
+        const file = new File([state.lastBlob], state.lastFilename, { type: state.lastBlob.type });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'خزنة مشفرة', text: 'افتحها بالرمز اللي هديك' });
+          return;
+        }
+      } catch {}
+    }
+    if (state.lastBlobUrl) {
+      try { await navigator.clipboard.writeText(state.lastBlobUrl); showToast('تم نسخ الرابط', 'ok'); } catch {}
+    }
+  });
+  $('newVaultBtn').addEventListener('click', () => location.reload());
+
+  // ═══════════════════════════════════════════════════════════
+  // UI SOUNDS
+  // ═══════════════════════════════════════════════════════════
+  function playUISound(type) {
+    if (!$('uiSoundsToggle').checked) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      const t = ctx.currentTime;
+      if (type === 'success') {
+        o.frequency.setValueAtTime(523, t);
+        o.frequency.exponentialRampToValueAtTime(1046, t + 0.15);
+      } else if (type === 'error') {
+        o.frequency.setValueAtTime(400, t);
+        o.frequency.exponentialRampToValueAtTime(200, t + 0.2);
+      } else {
+        o.frequency.setValueAtTime(800, t);
+      }
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+      o.start(t); o.stop(t + 0.28);
+    } catch {}
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // KEYBOARD SHORTCUTS
+  // ═══════════════════════════════════════════════════════════
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      const btn = $('createBtn');
+      if (btn && !btn.disabled && btn.offsetParent !== null) btn.click();
+    }
+    if (e.shiftKey && e.key === '?') { e.preventDefault(); $('helpBtn').click(); }
+    if (e.key === 'Escape') { closeModal(); closePreview(); }
+    if (e.altKey && e.key >= '1' && e.key <= '7') {
+      const idx = parseInt(e.key, 10) - 1;
+      const tabs = tabsStrip.querySelectorAll('.tab');
+      if (tabs[idx]) { tabs[idx].click(); e.preventDefault(); }
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // BUILD CHILD HTML
+  // ═══════════════════════════════════════════════════════════
+  function buildChildHtml(cfg) {
+    const { saltB64, ivB64, cipherB64, hmacB64, opts, compressed, iterations, innerHash, itemCount } = cfg;
+    const shapeIdx = opts.shapeIndex || 0;
+    const heroSVG = (typeof NRS_SHAPES !== 'undefined' && NRS_SHAPES[shapeIdx])
+      ? NRS_SHAPES[shapeIdx]
+      : '<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" fill="none" stroke="#a855f7" stroke-width="3"/></svg>';
+    const theme = { accent: opts.accent || '#a855f7', accent2: opts.accent || '#a855f7' };
+    const particlesJson = JSON.stringify([theme.accent, theme.accent2, '#ffffff']);
+    const celebJson = JSON.stringify(opts.celebration);
+    const fallbackJson = JSON.stringify(opts.fallbackUrls || []);
+    const expiryISO = opts.expiryEnabled ? opts.expiryISO : '';
+    const timeFromISO = opts.timeWindow ? opts.timeFrom : '';
+    const timeToISO = opts.timeWindow ? opts.timeTo : '';
+
+    return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>خزنة مغلقة</title>
+<style>
+  :root { --accent: ${theme.accent}; --text: #e8e9ee; --muted: #9aa0ab; --dim: #6a6f7a; --panel: #101114; --line: #3a3f4a; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; min-height: 100%; display: flex; justify-content: center; align-items: center;
+    background: radial-gradient(circle at 50% 30%, #1c1c22 0%, #0a0a0d 70%);
+    font-family: 'Segoe UI', 'Consolas', monospace; padding: 20px 12px; direction: rtl;
+    color: var(--text);
+  }
+  .vault-frame { position: relative; width: 440px; max-width: 94vw; }
+  .vault-interior {
+    position: absolute; inset: 0; border-radius: 18px;
+    background: linear-gradient(160deg, #0d0e12, #000000 80%);
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.9);
+    display: flex; align-items: center; justify-content: center;
+    padding: 26px; overflow: hidden; z-index: 1;
+  }
+  .interior-content { opacity: 0; transform: scale(0.85); text-align: center; max-height: 100%; overflow: auto; width: 100%; transition: opacity .7s ease, transform .7s ease; }
+  .interior-content p { color: #e8e9ee; font-size: 15px; line-height: 1.9; white-space: pre-wrap; margin: 0 0 14px; }
+  .interior-content .msg-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+  .interior-content .msg-actions button { padding: 8px 14px; font-size: 11px; background: linear-gradient(180deg,#3d414c,#24262d); border: none; color: #e8e9ee; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  .media-controls { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 12px; color: #c7cad2; }
+  .media-controls button { background: linear-gradient(180deg,#3d414c,#24262d); border: none; color: #e8e9ee; padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: inherit; }
+  .media-list { display: flex; flex-direction: column; gap: 10px; }
+  .media-reveal-item { position: relative; }
+  .media-reveal-item .media-select { position: absolute; top: 8px; left: 8px; width: 18px; height: 18px; z-index: 2; cursor: pointer; }
+  .media-caption { font-size: 12px; color: #c7cad2; margin-top: 6px; text-align: center; }
+  .file-card { display: flex; align-items: center; gap: 10px; background: #16171b; border: 1px solid #2a2d34; border-radius: 10px; padding: 14px; margin: 0 auto; max-width: 280px; }
+  .file-card-icon { font-size: 28px; flex-shrink: 0; }
+  .file-card-name { font-size: 13px; color: #e8e9ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: right; flex: 1; }
+  .interior-content img, .interior-content video { max-width: 100%; max-height: 45vh; border-radius: 10px; display: block; margin: 0 auto; }
+
+  .vault-door {
+    position: relative; padding: 22px 24px 22px; border-radius: 18px;
+    background: linear-gradient(155deg, #2a2d34 0%, #1c1e23 55%, #131418 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset, 0 20px 50px rgba(0,0,0,0.7);
+    z-index: 2; transition: opacity 0.5s ease, transform 0.5s ease;
+    overflow: hidden;
+  }
+  .vault-door.error { animation: shake 0.4s ease; }
+  .vault-door.thunk { animation: thunk 0.45s ease; }
+  .vault-door.leaving { opacity: 0; transform: scale(0.94); pointer-events: none; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+  @keyframes thunk { 0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(2px,-2px) scale(1.01)} 50%{transform:translate(-2px,2px) scale(0.99)} 75%{transform:translate(2px,2px) scale(1.01)} }
+
+  .vault-hero {
+    width: 100%; max-width: 220px; height: 180px;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 3;
+  }
+  .vault-hero svg {
+    width: 100%; height: 100%;
+    max-width: 180px; max-height: 180px;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+    animation: heroFloat 4s ease-in-out infinite;
+  }
+  @keyframes heroFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--accent); color: var(--accent); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 11px; border-radius: 20px; margin-bottom: 10px; }
+  .vault-title { font-size: 20px; font-weight: 800; color: #e8e9ee; margin-bottom: 5px; text-align: center; }
+  .vault-subtitle { font-size: 12.5px; color: #9aa0ab; line-height: 1.6; margin-bottom: 18px; text-align: center; }
+  .main-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+  .pin-col { flex: 1 1 160px; display: flex; flex-direction: column; }
+  .dial-col { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  #codeInput { width: 100%; background: #101114; border: 1px solid #3a3f4a; border-radius: 8px; color: #e8e9ee; padding: 12px; font-size: 16px; letter-spacing: 6px; text-align: center; outline: none; font-family: 'Consolas', monospace; }
+  #codeInput:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(168,85,247,0.15); }
+  #sqInput, #pinInput, #mathInput { width: 100%; background: #101114; border: 1px solid #3a3f4a; border-radius: 8px; color: #e8e9ee; padding: 10px; font-size: 13px; outline: none; }
+  .sq-label { font-size: 11px; color: #9aa0ab; margin-bottom: 6px; text-align: right; }
+  .unlock-btn { margin-top: 10px; width: 100%; padding: 12px; border: none; border-radius: 9px; background: linear-gradient(180deg, #37c07a, #1c7a45); color: #06120a; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+  .unlock-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .status-msg { margin-top: 10px; font-size: 12px; text-align: center; min-height: 16px; color: #8a8f9c; }
+  .status-msg.error { color: #ff7a7a; }
+  .status-msg.success { color: #6ef7a6; }
+  .attempts-note { font-size: 11px; text-align: center; margin-top: 4px; color: #6a6f7a; min-height: 14px; }
+  .attempts-note.warn { color: #ffb37a; }
+  .attempts-note.lock { color: #ff7a7a; }
+
+  .dial-circle { position: relative; width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2e38, #0a0b0e 78%); border: 2px solid var(--accent); box-shadow: 0 0 0 6px rgba(255,255,255,0.02) inset, 0 10px 22px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+  .dial-bar { width: 76%; height: 10px; border-radius: 6px; background: linear-gradient(90deg, #ff3b3b, #ff6b6b, #ff3b3b); box-shadow: 0 0 16px 2px rgba(255,59,59,0.55); animation: barIdlePulse 2.2s ease-in-out infinite; transition: all 0.35s ease; }
+  .dial-bar.scanning { animation: barScanning 0.5s ease-in-out infinite; }
+  .dial-bar.wrong { animation: none; background: linear-gradient(90deg, #ff2b2b, #ff8080, #ff2b2b); box-shadow: 0 0 30px 8px rgba(255,43,43,0.9); }
+  .dial-bar.correct { animation: none; background: linear-gradient(90deg, #2fae66, #6ef7a6, #2fae66); box-shadow: 0 0 26px 6px rgba(110,247,166,0.8); }
+  .dial-bar.open { transform: scaleX(0); }
+  @keyframes barIdlePulse { 0%,100%{opacity:0.85} 50%{opacity:1; box-shadow:0 0 22px 4px rgba(255,59,59,0.65)} }
+  @keyframes barScanning { 0%,100%{opacity:0.9} 50%{opacity:1; box-shadow:0 0 26px 6px rgba(255,59,59,0.85)} }
+  .dial-check { position: absolute; font-size: 36px; color: #6ef7a6; opacity: 0; transition: opacity 0.4s ease; }
+  .dial-check.show { opacity: 1; }
+  .lock-status { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #6a6f7a; }
+  .lock-status.open { color: #6ef7a6; }
+
+  .stats-row { display: flex; gap: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px; }
+  .stat { flex: 1; text-align: center; }
+  .stat-label { font-size: 9.5px; color: #6a6f7a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .stat-value { font-size: 13px; color: #e8e9ee; font-weight: 700; }
+  .stat-value.threat-low { color: #6ef7a6; }
+  .stat-value.threat-medium { color: #ffb37a; }
+  .stat-value.threat-high { color: #ff7a7a; }
+
+  .progress-row { margin-top: 12px; display: none; }
+  .progress-row.active { display: block; }
+  .progress-inner { height: 5px; background: #101114; border-radius: 4px; overflow: hidden; border: 1px solid #2a2d34; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), #2fae66); transition: width 0.35s ease; }
+  .progress-text { font-size: 10px; color: #6a6f7a; margin-top: 4px; text-align: center; }
+
+  .flash { position: absolute; inset: 0; background: #fff; opacity: 0; border-radius: 18px; pointer-events: none; z-index: 3; }
+  .red-flash { position: absolute; inset: 0; background: #ff2b2b; opacity: 0; border-radius: 18px; pointer-events: none; z-index: 3; }
+  .particles { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: visible; }
+  .particle { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: #6ef7a6; opacity: 0; transform: translate(-50%, -50%); }
+
+  .screen { display: none; width: 380px; max-width: 90vw; padding: 32px 24px; border-radius: 18px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+  .screen .icon { font-size: 40px; margin-bottom: 14px; }
+  .screen .title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .screen .desc { color: #8a8f9c; font-size: 12px; line-height: 1.8; }
+  .burned-screen { background: linear-gradient(155deg, #2a1c1c, #1a1212 45%, #100b0b); box-shadow: 0 0 0 1px rgba(255,90,90,0.15) inset, 0 20px 50px rgba(0,0,0,0.7); }
+  .burned-screen .title { color: #ff9a9a; }
+  .expired-screen { background: linear-gradient(155deg, #2a241c, #1a1512 45%, #100d0b); box-shadow: 0 0 0 1px rgba(255,200,90,0.15) inset, 0 20px 50px rgba(0,0,0,0.7); }
+  .expired-screen .title { color: #ffd166; }
+  .time-screen { background: linear-gradient(155deg, #1c1a2a, #12101a 45%, #0b0a10); box-shadow: 0 0 0 1px rgba(162,155,254,0.15) inset, 0 20px 50px rgba(0,0,0,0.7); }
+  .time-screen .title { color: #a29bfe; }
+  .receipt { background: linear-gradient(155deg, #1c2a24, #121a15 45%, #0b100d); box-shadow: 0 0 0 1px rgba(110,247,166,0.15) inset, 0 20px 50px rgba(0,0,0,0.7); text-align: right; }
+  .receipt h3 { color: #6ef7a6; margin: 0 0 12px; font-size: 14px; }
+  .receipt .row { font-size: 11px; color: #9aa0ab; margin: 6px 0; display: flex; justify-content: space-between; gap: 8px; }
+  .receipt .row span:last-child { color: #e8e9ee; direction: ltr; }
+
+  .splash { position: fixed; inset: 0; background: #0a0a0d; z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; transition: opacity 0.6s ease; }
+  .splash.hide { opacity: 0; pointer-events: none; }
+  .splash-text { color: var(--accent); font-size: 14px; letter-spacing: 2px; }
+
+  .puzzle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; padding: 12px; background: #101114; border-radius: 12px; border: 1px solid #3a3f4a; }
+  .puzzle-node { aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #3a3f4a, #1a1b1f 75%); border: 2px solid #2a2d34; cursor: pointer; transition: all 0.2s; }
+  .puzzle-node.hit { background: radial-gradient(circle at 35% 35%, var(--accent), #fff); border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+  .puzzle-node.wrong { background: radial-gradient(circle at 35% 35%, #ff3030, #8a0000); border-color: #ff3030; }
+
+  .gate-box { max-height: 180px; overflow-y: auto; padding: 14px; background: #101114; border: 1px solid #3a3f4a; border-radius: 10px; font-size: 12px; line-height: 1.8; color: #c7cad2; margin-bottom: 12px; text-align: right; }
+  .gate-progress { font-size: 10px; color: var(--dim); text-align: center; margin-bottom: 8px; }
+
+  .countdown-display { font-size: 72px; font-weight: 900; color: var(--accent); text-align: center; font-family: 'Consolas', monospace; text-shadow: 0 0 30px var(--accent); }
+  @keyframes cdPulse { 0%{transform:scale(0.5); opacity:0} 50%{transform:scale(1.15); opacity:1} 100%{transform:scale(1); opacity:1} }
+
+  .typewriter::after { content: '▌'; color: var(--accent); animation: blink 0.8s steps(2) infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+
+${opts.splash ? '<div class="splash" id="splashEl"><div class="splash-text">' + escapeHtml(opts.splashText) + '</div></div>' : ''}
+
+<div class="vault-frame" id="vaultFrame" style="display:none;">
+  <div class="vault-interior"><div class="interior-content" id="interiorContent"></div></div>
+  <div class="vault-door" id="vaultDoor">
+    <div class="vault-hero">${heroSVG}</div>
+    <div class="badge" style="display:block;text-align:center;">🔒 SECURE VAULT</div>
+    <div class="vault-title">خزنة #${shapeIdx + 1}</div>
+    <div class="vault-subtitle">${escapeHtml(opts.preMessage)}</div>
+
+    <div id="gateArea"></div>
+
+    <div class="main-row">
+      <div class="pin-col">
+        <div id="pinArea"></div>
+        <div id="sqArea"></div>
+        <div id="mathArea"></div>
+        <input id="codeInput" type="password" placeholder="ادخل الرمز" autocomplete="off">
+        <button type="button" class="unlock-btn" id="unlockBtn">فتح الخزنة</button>
+        <div class="status-msg" id="statusMsg"></div>
+        <div class="attempts-note" id="attemptsNote"></div>
+      </div>
+      <div class="dial-col">
+        <div class="dial-circle"><div class="dial-bar" id="dialBar"></div><div class="dial-check" id="dialCheck">✓</div></div>
+        <div class="lock-status" id="lockStatusEl">مغلق</div>
+      </div>
+    </div>
+
+    <div id="puzzleArea"></div>
+
+    <div class="progress-row" id="progressRow"><div class="progress-inner"><div class="progress-fill" id="progressFill"></div></div><div class="progress-text" id="progressText"></div></div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">التشفير</div><div class="stat-value">AES-256</div></div>
+      <div class="stat"><div class="stat-label">الخطر</div><div class="stat-value threat-low" id="threatVal">LOW</div></div>
+      <div class="stat"><div class="stat-label">العناصر</div><div class="stat-value">${itemCount}</div></div>
+    </div>
+  </div>
+  <div class="particles" id="particles"></div>
+  <div class="flash" id="flashEl"></div>
+  <div class="red-flash" id="redFlashEl"></div>
+</div>
+
+<div class="screen burned-screen" id="burnedScreen">
+  <div class="icon">🌐</div>
+  <div class="title">Deleted file</div>
+  <div class="desc">تم حذف الملف بعد فتحه 🔐</div>
+</div>
+
+<div class="screen expired-screen" id="expiredScreen">
+  <div class="icon">⏳</div>
+  <div class="title">انتهت صلاحية الخزنة</div>
+  <div class="desc">${expiryISO ? 'انتهت في: ' + escapeHtml(expiryISO) : ''}</div>
+</div>
+
+<div class="screen time-screen" id="timeScreen">
+  <div class="icon">⏰</div>
+  <div class="title">خارج النافذة الزمنية</div>
+  <div class="desc" id="timeScreenDesc">هذه الخزنة تفتح فقط في وقت محدد</div>
+</div>
+
+<div class="screen receipt" id="receiptScreen">
+  <h3>🧾 إيصال الفتح</h3>
+  <div class="row"><span>وقت الفتح</span><span id="rcTime">—</span></div>
+  <div class="row"><span>وقت الإنشاء</span><span id="rcCreated">—</span></div>
+  <div class="row"><span>الجهاز</span><span id="rcFp">—</span></div>
+  <div class="row"><span>هاش الحمولة</span><span id="rcHash">—</span></div>
+  <div class="row"><span>المعرّف</span><span id="rcId">—</span></div>
+</div>
+
+${buildChildScript({ saltB64, ivB64, cipherB64, hmacB64, opts, compressed, iterations, innerHash, expiryISO, particlesJson, celebJson, fallbackJson, timeFromISO, timeToISO })}
+</body>
+</html>`;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BUILD CHILD SCRIPT
+  // ═══════════════════════════════════════════════════════════
+  function buildChildScript(cfg) {
+    const { saltB64, ivB64, cipherB64, hmacB64, opts, compressed, iterations, innerHash, expiryISO, particlesJson, celebJson, fallbackJson, timeFromISO, timeToISO } = cfg;
+    const theme = { accent: opts.accent || '#a855f7' };
+
+    let s = '<script>\n';
+    s += '(function(){\n';
+    s += '"use strict";\n';
+    s += 'var SALT_B64 = ' + JSON.stringify(saltB64) + ';\n';
+    s += 'var IV_B64 = ' + JSON.stringify(ivB64) + ';\n';
+    s += 'var CIPHER_B64 = ' + JSON.stringify(cipherB64) + ';\n';
+    s += 'var HMAC_B64 = ' + (hmacB64 ? JSON.stringify(hmacB64) : 'null') + ';\n';
+    s += 'var VAULT_ID = ' + JSON.stringify(opts.vaultId) + ';\n';
+    s += 'var CREATED_AT = ' + opts.createdAt + ';\n';
+    s += 'var ONE_TIME = ' + (opts.oneTime ? 'true' : 'false') + ';\n';
+    s += 'var RATE_LIMIT = ' + (opts.rateLimit ? 'true' : 'false') + ';\n';
+    s += 'var EXPIRY_ISO = ' + (expiryISO ? JSON.stringify(expiryISO) : 'null') + ';\n';
+    s += 'var SQ_ENABLED = ' + (opts.sqEnabled ? 'true' : 'false') + ';\n';
+    s += 'var SQ_ANSWER = ' + jsonSafe((opts.sqAnswer || '').toLowerCase()) + ';\n';
+    s += 'var SQ_QUESTION = ' + jsonSafe(opts.sqQuestion || '') + ';\n';
+    s += 'var PIN_ENABLED = ' + (opts.pinEnabled ? 'true' : 'false') + ';\n';
+    s += 'var PIN_VALUE = ' + jsonSafe(opts.pin || '') + ';\n';
+    s += 'var MATH_GATE = ' + (opts.mathGate ? 'true' : 'false') + ';\n';
+    s += 'var PUZZLE_ON = ' + (opts.puzzle ? 'true' : 'false') + ';\n';
+    s += 'var PUZZLE_COUNT = ' + (opts.puzzleCount || 5) + ';\n';
+    s += 'var PUZZLE_DIFF = ' + jsonSafe(opts.puzzleDiff || 'normal') + ';\n';
+    s += 'var HMAC_ENABLED = ' + (opts.hmac ? 'true' : 'false') + ';\n';
+    s += 'var ANTI_DEBUG = ' + (opts.antiDebug ? 'true' : 'false') + ';\n';
+    s += 'var BURN_ON_TAMPER = ' + (opts.burn ? 'true' : 'false') + ';\n';
+    s += 'var COMPRESSED = ' + (compressed ? 'true' : 'false') + ';\n';
+    s += 'var ITERATIONS = ' + iterations + ';\n';
+    s += 'var INNER_HASH = ' + JSON.stringify(innerHash) + ';\n';
+    s += 'var DEVICE_BIND = ' + (opts.deviceBind ? 'true' : 'false') + ';\n';
+    s += 'var RECEIPT_ON = ' + (opts.receipt ? 'true' : 'false') + ';\n';
+    s += 'var COPY_MSG = ' + (opts.copyMsg ? 'true' : 'false') + ';\n';
+    s += 'var SOUND_ON = ' + (opts.sound ? 'true' : 'false') + ';\n';
+    s += 'var TTS_ON = ' + (opts.tts ? 'true' : 'false') + ';\n';
+    s += 'var TTS_TEXT = ' + jsonSafe(opts.ttsText) + ';\n';
+    s += 'var TYPEWRITER = ' + (opts.typewriter ? 'true' : 'false') + ';\n';
+    s += 'var COUNTDOWN = ' + (opts.countdown ? 'true' : 'false') + ';\n';
+    s += 'var SHAKE_ON = ' + (opts.shake ? 'true' : 'false') + ';\n';
+    s += 'var SCROLL_GATE = ' + (opts.scrollGate ? 'true' : 'false') + ';\n';
+    s += 'var SCROLL_GATE_TEXT = ' + jsonSafe(opts.scrollGateText || '') + ';\n';
+    s += 'var HTTPS_ONLY = ' + (opts.httpsOnly ? 'true' : 'false') + ';\n';
+    s += 'var TIME_FROM = ' + (timeFromISO ? JSON.stringify(timeFromISO) : 'null') + ';\n';
+    s += 'var TIME_TO = ' + (timeToISO ? JSON.stringify(timeToISO) : 'null') + ';\n';
+    s += 'var ACCENT = ' + jsonSafe(theme.accent) + ';\n';
+    s += 'var PARTICLE_COLORS = ' + particlesJson + ';\n';
+    s += 'var CELEBRATION = ' + celebJson + ';\n';
+    s += 'var FALLBACK_URLS = ' + fallbackJson + ';\n';
+    s += 'var ANIMATED_BG = ' + (opts.animatedBg ? 'true' : 'false') + ';\n';
+    s += '\n';
+
+    s += 'var STORAGE_KEY = "vaultUsed_" + VAULT_ID;\n';
+    s += 'var ATTEMPTS_KEY = "vaultAttempts_" + VAULT_ID;\n';
+    s += 'var LOCKROUND_KEY = "vaultLockRound_" + VAULT_ID;\n';
+    s += 'var LOCKUNTIL_KEY = "vaultLockUntil_" + VAULT_ID;\n';
+    s += 'var FPBIND_KEY = "vaultFp_" + VAULT_ID;\n';
+    s += 'var TAMPER_KEY = "vaultTamper_" + VAULT_ID;\n';
+    s += 'var MAX_ATTEMPTS = 5;\n';
+    s += 'var BASE_LOCK_SECONDS = 30;\n';
+    s += 'var DENSITY_MAP = { light: 0.55, normal: 1, heavy: 1.8 };\n';
+    s += 'var SPEED_MAP = { slow: 1.6, normal: 1, fast: 0.6 };\n';
+    s += '\n';
+
+    s += 'function $(id){ return document.getElementById(id); }\n';
+    s += 'function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }\n';
+    s += 'function getInt(k, fb){ var v = parseInt(localStorage.getItem(k) || "", 10); return isNaN(v) ? fb : v; }\n';
+    s += 'function getAttempts(){ return getInt(ATTEMPTS_KEY, 0); }\n';
+    s += 'function setAttempts(n){ localStorage.setItem(ATTEMPTS_KEY, String(n)); }\n';
+    s += 'function getLockRound(){ return getInt(LOCKROUND_KEY, 0); }\n';
+    s += 'function setLockRound(n){ localStorage.setItem(LOCKROUND_KEY, String(n)); }\n';
+    s += 'function getLockUntil(){ return getInt(LOCKUNTIL_KEY, 0); }\n';
+    s += 'function setLockUntil(ts){ localStorage.setItem(LOCKUNTIL_KEY, String(ts)); }\n';
+    s += 'function fromB64(b64){ var bin = atob(b64); var out = new Uint8Array(bin.length); for (var i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }\n';
+    s += 'function sha256(bytes){ return crypto.subtle.digest("SHA-256", bytes).then(function(b){ return new Uint8Array(b); }); }\n';
+    s += '\n';
+
+    s += 'if (HTTPS_ONLY && location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "") {\n';
+    s += '  document.body.innerHTML = "<div style=\\"padding:40px;text-align:center;color:#ff7a7a;font-family:monospace\\"><h2>⚠️ HTTPS Required</h2></div>";\n';
+    s += '  return;\n';
+    s += '}\n';
+
+    s += 'if (TIME_FROM && TIME_TO) {\n';
+    s += '  var tf = Date.parse(TIME_FROM), tt = Date.parse(TIME_TO), now = Date.now();\n';
+    s += '  if (!isNaN(tf) && !isNaN(tt) && (now < tf || now > tt)) {\n';
+    s += '    document.body.innerHTML = "";\n';
+    s += '    var ts = document.getElementById("timeScreen");\n';
+    s += '    if (ts) { ts.style.display = "block"; document.body.appendChild(ts); var td = document.getElementById("timeScreenDesc"); if (td) td.textContent = "تفتح من " + new Date(tf).toLocaleString("ar") + " إلى " + new Date(tt).toLocaleString("ar"); }\n';
+    s += '    return;\n';
+    s += '  }\n';
+    s += '}\n';
+
+    s += 'if (EXPIRY_ISO) {\n';
+    s += '  var exp = Date.parse(EXPIRY_ISO);\n';
+    s += '  if (!isNaN(exp) && Date.now() > exp) {\n';
+    s += '    document.body.innerHTML = "";\n';
+    s += '    var es = document.getElementById("expiredScreen");\n';
+    s += '    if (es) { es.style.display = "block"; document.body.appendChild(es); }\n';
+    s += '    return;\n';
+    s += '  }\n';
+    s += '}\n';
+
+    s += 'if (ONE_TIME && localStorage.getItem(STORAGE_KEY) === "1") {\n';
+    s += '  document.body.innerHTML = "";\n';
+    s += '  var bs = document.getElementById("burnedScreen");\n';
+    s += '  if (bs) { bs.style.display = "block"; document.body.appendChild(bs); }\n';
+    s += '  return;\n';
+    s += '}\n';
+
+    s += 'if (FALLBACK_URLS && FALLBACK_URLS.length) {\n';
+    s += '  setTimeout(function(){\n';
+    s += '    var wrap = document.createElement("div");\n';
+    s += '    wrap.className = "screen receipt";\n';
+    s += '    wrap.style.cssText = "display:block;margin-top:20px";\n';
+    s += '    var h = document.createElement("h3"); h.style.color = ACCENT; h.textContent = "🔗 روابط بديلة";\n';
+    s += '    wrap.appendChild(h);\n';
+    s += '    FALLBACK_URLS.forEach(function(u, i){\n';
+    s += '      var a = document.createElement("a");\n';
+    s += '      a.href = u; a.target = "_blank"; a.rel = "noopener";\n';
+    s += '      a.style.cssText = "display:block;padding:10px;background:#101114;border:1px solid " + ACCENT + ";color:" + ACCENT + ";text-decoration:none;border-radius:8px;font-size:12px;margin-top:8px;word-break:break-all";\n';
+    s += '      a.textContent = "🔗 " + (i+1) + ". " + u.slice(0, 60) + (u.length > 60 ? "…" : "");\n';
+    s += '      wrap.appendChild(a);\n';
+    s += '    });\n';
+    s += '    document.body.appendChild(wrap);\n';
+    s += '  }, 1500);\n';
+    s += '}\n';
+
+    s += 'var vaultFrame = document.getElementById("vaultFrame");\n';
+    s += 'if (vaultFrame) vaultFrame.style.display = "block";\n';
+    s += 'var splash = document.getElementById("splashEl");\n';
+    s += 'if (splash) setTimeout(function(){ splash.classList.add("hide"); }, 1400);\n';
+
+    s += 'var vaultDoor = document.getElementById("vaultDoor");\n';
+    s += 'var dialBar = document.getElementById("dialBar");\n';
+    s += 'var dialCheck = document.getElementById("dialCheck");\n';
+    s += 'var lockStatusEl = document.getElementById("lockStatusEl");\n';
+    s += 'var threatVal = document.getElementById("threatVal");\n';
+    s += 'var flashEl = document.getElementById("flashEl");\n';
+    s += 'var redFlashEl = document.getElementById("redFlashEl");\n';
+    s += 'var particlesEl = document.getElementById("particles");\n';
+    s += 'var interiorContent = document.getElementById("interiorContent");\n';
+    s += 'var codeInput = document.getElementById("codeInput");\n';
+    s += 'var unlockBtn = document.getElementById("unlockBtn");\n';
+    s += 'var statusMsg = document.getElementById("statusMsg");\n';
+    s += 'var attemptsNote = document.getElementById("attemptsNote");\n';
+    s += 'var progressRow = document.getElementById("progressRow");\n';
+    s += 'var progressFill = document.getElementById("progressFill");\n';
+    s += 'var progressText = document.getElementById("progressText");\n';
+    s += 'var gateArea = document.getElementById("gateArea");\n';
+    s += 'var pinArea = document.getElementById("pinArea");\n';
+    s += 'var sqArea = document.getElementById("sqArea");\n';
+    s += 'var mathArea = document.getElementById("mathArea");\n';
+    s += 'var puzzleArea = document.getElementById("puzzleArea");\n';
+    s += '\n';
+
+    s += 'function beep(freq, dur, vol){\n';
+    s += '  if (!SOUND_ON) return;\n';
+    s += '  try {\n';
+    s += '    var ctx = new (window.AudioContext || window.webkitAudioContext)();\n';
+    s += '    var o = ctx.createOscillator(), g = ctx.createGain();\n';
+    s += '    o.type = "sine"; o.frequency.value = freq;\n';
+    s += '    o.connect(g); g.connect(ctx.destination);\n';
+    s += '    var t = ctx.currentTime;\n';
+    s += '    g.gain.setValueAtTime(0.0001, t);\n';
+    s += '    g.gain.exponentialRampToValueAtTime((vol||0.08), t + 0.01);\n';
+    s += '    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);\n';
+    s += '    o.start(t); o.stop(t + dur + 0.02);\n';
+    s += '  } catch (e) {}\n';
+    s += '}\n';
+
+    s += 'var lockTick = null;\n';
+    s += 'function startLockCountdown(){\n';
+    s += '  if (lockTick) clearInterval(lockTick);\n';
+    s += '  var tick = function(){\n';
+    s += '    var rem = Math.ceil((getLockUntil() - Date.now()) / 1000);\n';
+    s += '    if (rem <= 0) {\n';
+    s += '      clearInterval(lockTick); lockTick = null;\n';
+    s += '      setAttempts(0);\n';
+    s += '      unlockBtn.disabled = false; codeInput.disabled = false;\n';
+    s += '      attemptsNote.className = "attempts-note"; attemptsNote.textContent = "";\n';
+    s += '      threatVal.textContent = "LOW"; threatVal.className = "stat-value threat-low";\n';
+    s += '      statusMsg.className = "status-msg"; statusMsg.textContent = "";\n';
+    s += '      return;\n';
+    s += '    }\n';
+    s += '    codeInput.disabled = true; unlockBtn.disabled = true;\n';
+    s += '    attemptsNote.className = "attempts-note lock";\n';
+    s += '    attemptsNote.textContent = "استنى " + rem + " ثانية";\n';
+    s += '    threatVal.textContent = "HIGH"; threatVal.className = "stat-value threat-high";\n';
+    s += '  };\n';
+    s += '  tick(); lockTick = setInterval(tick, 1000);\n';
+    s += '}\n';
+    s += 'if (RATE_LIMIT && getLockUntil() > Date.now()) startLockCountdown();\n';
+
+    s += 'function registerFail(){\n';
+    s += '  if (!RATE_LIMIT) return false;\n';
+    s += '  var used = getAttempts() + 1;\n';
+    s += '  setAttempts(used);\n';
+    s += '  if (used >= MAX_ATTEMPTS) {\n';
+    s += '    var round = getLockRound() + 1; setLockRound(round);\n';
+    s += '    var secs = Math.min(BASE_LOCK_SECONDS * Math.pow(2, round - 1), 3600);\n';
+    s += '    setLockUntil(Date.now() + secs * 1000);\n';
+    s += '    startLockCountdown();\n';
+    s += '    return true;\n';
+    s += '  }\n';
+    s += '  var rem = MAX_ATTEMPTS - used;\n';
+    s += '  attemptsNote.className = "attempts-note warn";\n';
+    s += '  attemptsNote.textContent = "متبقي " + rem + " محاولة";\n';
+    s += '  threatVal.textContent = used >= 2 ? "MEDIUM" : "LOW";\n';
+    s += '  threatVal.className = "stat-value " + (used >= 2 ? "threat-medium" : "threat-low");\n';
+    s += '  return false;\n';
+    s += '}\n';
+
+    s += 'function deriveKey(password, saltBytes, usage){\n';
+    s += '  var enc = new TextEncoder();\n';
+    s += '  return crypto.subtle.importKey("raw", enc.encode(password), { name:"PBKDF2" }, false, ["deriveKey"]).then(function(bk){\n';
+    s += '    return crypto.subtle.deriveKey({ name:"PBKDF2", salt: saltBytes, iterations: ITERATIONS, hash:"SHA-256" }, bk, { name:"AES-GCM", length:256 }, false, [usage]);\n';
+    s += '  });\n';
+    s += '}\n';
+    s += 'function gzipDecompress(bytes){\n';
+    s += '  var ds = new DecompressionStream("gzip");\n';
+    s += '  var w = ds.writable.getWriter(); w.write(bytes); w.close();\n';
+    s += '  return new Response(ds.readable).arrayBuffer().then(function(b){ return new Uint8Array(b); });\n';
+    s += '}\n';
+    s += 'function computeFp(){\n';
+    s += '  var parts = [navigator.userAgent, navigator.language, screen.width+"x"+screen.height+"x"+screen.colorDepth, new Date().getTimezoneOffset(), navigator.hardwareConcurrency||0, navigator.platform||"", navigator.maxTouchPoints||0];\n';
+    s += '  return sha256(new TextEncoder().encode(parts.join("|"))).then(function(h){\n';
+    s += '    var s = ""; for (var i=0;i<h.length;i++) s += h[i].toString(16).padStart(2,"0"); return s.slice(0,32);\n';
+    s += '  });\n';
+    s += '}\n';
+
+    s += 'function setProgressUI(p, label){ progressRow.classList.add("active"); progressFill.style.width = p + "%"; progressText.textContent = label || ""; }\n';
+    s += 'function hideProgressUI(){ setTimeout(function(){ progressRow.classList.remove("active"); }, 800); }\n';
+    s += 'function flashOnce(){ flashEl.style.transition = "opacity .18s ease"; flashEl.style.opacity = "0.55"; setTimeout(function(){ flashEl.style.transition = "opacity .6s ease"; flashEl.style.opacity = "0"; }, 180); }\n';
+    s += 'function redFlashOnce(){ redFlashEl.style.transition = "opacity .12s ease"; redFlashEl.style.opacity = "0.25"; setTimeout(function(){ redFlashEl.style.transition = "opacity .5s ease"; redFlashEl.style.opacity = "0"; }, 140); }\n';
+
+    s += 'function burstParticles(){\n';
+    s += '  var colors = (PARTICLE_COLORS && PARTICLE_COLORS.length) ? PARTICLE_COLORS : ["#6ef7a6","#6ee7ff","#ffe08a"];\n';
+    s += '  for (var i = 0; i < 22; i++) {\n';
+    s += '    var p = document.createElement("div"); p.className = "particle";\n';
+    s += '    var a = (Math.PI * 2 * i) / 22 + Math.random() * 0.3;\n';
+    s += '    var d = 60 + Math.random() * 80;\n';
+    s += '    p.style.background = colors[i % colors.length];\n';
+    s += '    particlesEl.appendChild(p);\n';
+    s += '    var anim = p.animate([\n';
+    s += '      { transform: "translate(-50%,-50%) scale(1)", opacity: 1 },\n';
+    s += '      { transform: "translate(calc(-50% + " + (Math.cos(a)*d) + "px), calc(-50% + " + (Math.sin(a)*d) + "px)) scale(0.3)", opacity: 0 }\n';
+    s += '    ], { duration: 700 + Math.random()*400, easing: "cubic-bezier(.2,.7,.3,1)" });\n';
+    s += '    anim.onfinish = (function(el){ return function(){ el.remove(); }; })(p);\n';
+    s += '  }\n';
+    s += '}\n';
+
+    s += 'function celebLayer(){\n';
+    s += '  var l = document.getElementById("celebLayer");\n';
+    s += '  if (!l) { l = document.createElement("div"); l.id = "celebLayer"; l.style.cssText = "position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999"; document.body.appendChild(l); }\n';
+    s += '  return l;\n';
+    s += '}\n';
+    s += 'function spawnFalling(baseCount, makeEl){\n';
+    s += '  var dm = DENSITY_MAP[(CELEBRATION && CELEBRATION.density) || "normal"] || 1;\n';
+    s += '  var sm = SPEED_MAP[(CELEBRATION && CELEBRATION.speed) || "normal"] || 1;\n';
+    s += '  var count = Math.max(4, Math.round(baseCount * dm));\n';
+    s += '  var layer = celebLayer();\n';
+    s += '  for (var i = 0; i < count; i++) {\n';
+    s += '    var el = makeEl();\n';
+    s += '    var x = Math.random() * 100, drift = Math.random() * 160 - 80;\n';
+    s += '    var dur = (2600 + Math.random() * 1800) * sm, delay = Math.random() * 500 * sm;\n';
+    s += '    el.style.position = "absolute"; el.style.left = x + "vw"; el.style.top = "-30px";\n';
+    s += '    layer.appendChild(el);\n';
+    s += '    var a = el.animate([\n';
+    s += '      { transform: "translate(0,0) rotate(0deg)", opacity: 1 },\n';
+    s += '      { transform: "translate(" + drift + "px, 108vh) rotate(" + (Math.random()*720-360) + "deg)", opacity: 1, offset: 0.85 },\n';
+    s += '      { transform: "translate(" + drift + "px, 115vh) rotate(" + (Math.random()*720-360) + "deg)", opacity: 0 }\n';
+    s += '    ], { duration: dur, delay: delay, easing: "cubic-bezier(.25,.46,.45,.94)", fill: "forwards" });\n';
+    s += '    a.onfinish = (function(el){ return function(){ el.remove(); }; })(el);\n';
+    s += '  }\n';
+    s += '}\n';
+    s += 'function spawnConfetti(){\n';
+    s += '  var colors = (PARTICLE_COLORS && PARTICLE_COLORS.length) ? PARTICLE_COLORS : ["#6ee7ff","#ff9f43","#ff6b9d","#ffd166"];\n';
+    s += '  spawnFalling(46, function(){\n';
+    s += '    var el = document.createElement("div");\n';
+    s += '    el.style.width = (6 + Math.random()*6) + "px"; el.style.height = (10 + Math.random()*6) + "px";\n';
+    s += '    el.style.background = colors[Math.floor(Math.random()*colors.length)];\n';
+    s += '    el.style.borderRadius = Math.random() > 0.5 ? "2px" : "50%";\n';
+    s += '    return el;\n';
+    s += '  });\n';
+    s += '}\n';
+    s += 'function spawnRain(items){\n';
+    s += '  var list = (items && items.length) ? items : ["🎉"];\n';
+    s += '  spawnFalling(34, function(){\n';
+    s += '    var el = document.createElement("div");\n';
+    s += '    el.textContent = list[Math.floor(Math.random()*list.length)];\n';
+    s += '    el.style.fontSize = (16 + Math.random()*14) + "px";\n';
+    s += '    el.style.color = ACCENT || "#e8e9ee";\n';
+    s += '    return el;\n';
+    s += '  });\n';
+    s += '}\n';
+    s += 'function spawnMatrix(){\n';
+    s += '  var layer = celebLayer();\n';
+    s += '  var chars = "01アイウエオ".split("");\n';
+    s += '  for (var col = 0; col < 40; col++) {\n';
+    s += '    var stream = document.createElement("div");\n';
+    s += '    stream.style.cssText = "position:absolute;top:-100%;left:" + (col * 2.5) + "vw;color:#39ff14;font-family:monospace;font-size:14px;line-height:1.2;text-shadow:0 0 6px #39ff14;pointer-events:none";\n';
+    s += '    var txt = "";\n';
+    s += '    for (var r = 0; r < 30; r++) txt += chars[Math.floor(Math.random()*chars.length)] + "\\n";\n';
+    s += '    stream.textContent = txt;\n';
+    s += '    layer.appendChild(stream);\n';
+    s += '    var a = stream.animate([{ transform: "translateY(0)" }, { transform: "translateY(140vh)" }], { duration: 2000 + Math.random() * 3000, delay: Math.random() * 1000, fill: "forwards" });\n';
+    s += '    a.onfinish = (function(el){ return function(){ el.remove(); }; })(stream);\n';
+    s += '  }\n';
+    s += '}\n';
+    s += 'function spawnBubbles(){\n';
+    s += '  var layer = celebLayer();\n';
+    s += '  for (var i = 0; i < 30; i++) {\n';
+    s += '    var b = document.createElement("div");\n';
+    s += '    var size = 12 + Math.random() * 30;\n';
+    s += '    b.style.cssText = "position:absolute;width:" + size + "px;height:" + size + "px;border-radius:50%;border:2px solid " + ACCENT + ";background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.4), transparent 60%);bottom:-50px;left:" + (Math.random()*100) + "vw;pointer-events:none";\n';
+    s += '    layer.appendChild(b);\n';
+    s += '    var a = b.animate([{ transform: "translateY(0) scale(0.6)", opacity: 0.9 }, { transform: "translateY(-115vh) scale(1.2)", opacity: 0 }], { duration: 3000 + Math.random() * 2500, delay: Math.random() * 1000, fill: "forwards" });\n';
+    s += '    a.onfinish = (function(el){ return function(){ el.remove(); }; })(b);\n';
+    s += '  }\n';
+    s += '}\n';
+    s += 'function spawnGlow(){ vaultFrame.style.filter = "drop-shadow(0 0 42px " + ACCENT + ")"; setTimeout(function(){ vaultFrame.style.filter = ""; }, 3600); }\n';
+    s += 'function spawnHearts(){ spawnRain(["💖","💗","💕","❤️","💝"]); }\n';
+    s += 'function spawnSnow(){ spawnRain(["❄️","❅","❆","✻","✽"]); }\n';
+    s += 'function spawnFireworks(){\n';
+    s += '  for (var k = 0; k < 6; k++) {\n';
+    s += '    (function(k){\n';
+    s += '      setTimeout(function(){\n';
+    s += '        var cx = Math.random() * window.innerWidth;\n';
+    s += '        var cy = Math.random() * window.innerHeight * 0.6 + 60;\n';
+    s += '        for (var i = 0; i < 24; i++) {\n';
+    s += '          var el = document.createElement("div");\n';
+    s += '          el.style.cssText = "position:fixed;width:5px;height:5px;border-radius:50%;background:" + (PARTICLE_COLORS[i % PARTICLE_COLORS.length] || "#fff") + ";left:" + cx + "px;top:" + cy + "px;pointer-events:none;z-index:9999";\n';
+    s += '          document.body.appendChild(el);\n';
+    s += '          var a = (Math.PI * 2 * i) / 24, d = 80 + Math.random() * 90;\n';
+    s += '          var anim = el.animate([{ transform: "translate(0,0) scale(1)", opacity: 1 },{ transform: "translate(" + (Math.cos(a)*d) + "px," + (Math.sin(a)*d) + "px) scale(0)", opacity: 0 }], { duration: 800 + Math.random()*400, easing: "cubic-bezier(.2,.7,.3,1)" });\n';
+    s += '          anim.onfinish = (function(el){ return function(){ el.remove(); }; })(el);\n';
+    s += '        }\n';
+    s += '      }, k * 350);\n';
+    s += '    })(k);\n';
+    s += '  }\n';
+    s += '}\n';
+    s += 'function playSuccessSound(){\n';
+    s += '  if (!SOUND_ON) return;\n';
+    s += '  var notes = [523.25, 659.25, 783.99, 1046.5];\n';
+    s += '  notes.forEach(function(f, i){ setTimeout(function(){ beep(f, 0.3, 0.1); }, i * 120); });\n';
+    s += '}\n';
+    s += 'function speakSuccess(){\n';
+    s += '  if (!TTS_ON || !window.speechSynthesis) return;\n';
+    s += '  try { var u = new SpeechSynthesisUtterance(TTS_TEXT); u.lang = "ar"; speechSynthesis.speak(u); } catch (e) {}\n';
+    s += '}\n';
+    s += 'function runCelebration(){\n';
+    s += '  if (!CELEBRATION || !CELEBRATION.enabled) { playSuccessSound(); speakSuccess(); return; }\n';
+    s += '  var m = CELEBRATION.mode;\n';
+    s += '  if (m === "glow") spawnGlow();\n';
+    s += '  else if (m === "custom") spawnRain(CELEBRATION.items);\n';
+    s += '  else if (m === "fireworks") spawnFireworks();\n';
+    s += '  else if (m === "hearts") spawnHearts();\n';
+    s += '  else if (m === "snow") spawnSnow();\n';
+    s += '  else if (m === "matrix") spawnMatrix();\n';
+    s += '  else if (m === "bubbles") spawnBubbles();\n';
+    s += '  else spawnConfetti();\n';
+    s += '  playSuccessSound();\n';
+    s += '  speakSuccess();\n';
+    s += '}\n';
+
+    s += 'var gatePassed = !SCROLL_GATE;\n';
+s += 'if (SCROLL_GATE) {\n';
+s += '  gateArea.innerHTML = \'<div class="gate-progress" id="gateProgress">مرر لقبول الشروط</div><div class="gate-box" id="gateBox">\' + SCROLL_GATE_TEXT.replace(/</g, "&lt;") + \'</div>\';\n';
+s += '  var gateBox = document.getElementById("gateBox");\n';
+s += '  var gateProgress = document.getElementById("gateProgress");\n';
+s += '  var checkGate = function(){\n';
+s += '    var scrollable = gateBox.scrollHeight - gateBox.clientHeight;\n';
+s += '    if (scrollable <= 5) {\n';
+s += '      // النص قصير — ما فيه حاجة للتمرير\n';
+s += '      gatePassed = true;\n';
+s += '      gateProgress.textContent = "✔ لا حاجة للتمرير — النص قصير";\n';
+s += '      gateProgress.style.color = "#6ef7a6";\n';
+s += '      return;\n';
+s += '    }\n';
+s += '    var pct = Math.min(100, Math.round((gateBox.scrollTop / scrollable) * 100));\n';
+s += '    gateProgress.textContent = pct + "% — " + (pct >= 95 ? "تم القبول ✓" : "مرر للأسفل");\n';
+s += '    gateProgress.style.color = pct >= 95 ? "#6ef7a6" : "#6a6f7a";\n';
+s += '    gatePassed = pct >= 95;\n';
+s += '  };\n';
+s += '  gateBox.addEventListener("scroll", checkGate);\n';
+s += '  setTimeout(checkGate, 100);\n';  // فحص أولي بعد الرسم
+s += '}\n';
+
+    s += 'if (SQ_ENABLED) {\n';
+    s += '  sqArea.innerHTML = \'<div class="sq-label">\' + SQ_QUESTION.replace(/</g, "&lt;") + \'</div><input id="sqInput" type="text" placeholder="الإجابة" autocomplete="off" style="margin-bottom:8px">\';\n';
+    s += '}\n';
+
+    s += 'if (PIN_ENABLED) {\n';
+    s += '  pinArea.innerHTML = \'<input id="pinInput" type="password" placeholder="PIN" autocomplete="off" maxlength="20" style="margin-bottom:8px">\';\n';
+    s += '}\n';
+
+    s += 'var mathPassed = !MATH_GATE;\n';
+    s += 'var mathAnswer = 0;\n';
+    s += 'if (MATH_GATE) {\n';
+    s += '  var a = Math.floor(Math.random() * 20) + 5;\n';
+    s += '  var b = Math.floor(Math.random() * 15) + 3;\n';
+    s += '  mathAnswer = a + b;\n';
+    s += '  mathArea.innerHTML = \'<div class="sq-label">ما نتيجة \' + a + \' + \' + b + \'؟</div><input id="mathInput" type="number" placeholder="الجواب" autocomplete="off" style="margin-bottom:8px">\';\n';
+    s += '}\n';
+
+    s += 'var puzzlePassed = !PUZZLE_ON;\n';
+    s += 'if (PUZZLE_ON) {\n';
+    s += '  var correctSeq = [];\n';
+    s += '  var pool = [0,1,2,3,4,5,6,7,8];\n';
+    s += '  for (var i = 0; i < PUZZLE_COUNT; i++) {\n';
+    s += '    var idx = Math.floor(Math.random() * pool.length);\n';
+    s += '    correctSeq.push(pool[idx]);\n';
+    s += '    pool.splice(idx, 1);\n';
+    s += '  }\n';
+    s += '  var grid = document.createElement("div"); grid.className = "puzzle-grid";\n';
+    s += '  for (var i = 0; i < 9; i++) {\n';
+    s += '    var node = document.createElement("div");\n';
+    s += '    node.className = "puzzle-node";\n';
+    s += '    node.dataset.idx = i;\n';
+    s += '    grid.appendChild(node);\n';
+    s += '  }\n';
+    s += '  puzzleArea.innerHTML = \'<div class="sq-label">اضغط على \' + PUZZLE_COUNT + \' دوائر بالتسلسل</div>\';\n';
+    s += '  puzzleArea.appendChild(grid);\n';
+    s += '  var diffTime = PUZZLE_DIFF === "easy" ? 3000 : PUZZLE_DIFF === "hard" ? 1200 : 2000;\n';
+    s += '  var puzzleProgress = 0;\n';
+    s += '  var previewSeq = function(){\n';
+    s += '    puzzleProgress = 0;\n';
+    s += '    var i = 0;\n';
+    s += '    var show = function(){\n';
+    s += '      if (i >= correctSeq.length) {\n';
+    s += '        grid.querySelectorAll(".puzzle-node").forEach(function(n){ n.classList.remove("hit"); });\n';
+    s += '        return;\n';
+    s += '      }\n';
+    s += '      var node = grid.children[correctSeq[i]];\n';
+    s += '      node.classList.add("hit");\n';
+    s += '      setTimeout(function(){ node.classList.remove("hit"); }, diffTime / 2);\n';
+    s += '      i++;\n';
+    s += '      setTimeout(show, diffTime);\n';
+    s += '    };\n';
+    s += '    show();\n';
+    s += '  };\n';
+    s += '  setTimeout(previewSeq, 400);\n';
+    s += '  grid.addEventListener("click", function(e){\n';
+    s += '    var node = e.target.closest(".puzzle-node");\n';
+    s += '    if (!node) return;\n';
+    s += '    var idx = parseInt(node.dataset.idx, 10);\n';
+    s += '    if (correctSeq[puzzleProgress] === idx) {\n';
+    s += '      node.classList.add("hit");\n';
+    s += '      puzzleProgress++;\n';
+    s += '      beep(800, 0.08);\n';
+    s += '      if (puzzleProgress >= correctSeq.length) {\n';
+    s += '        puzzlePassed = true;\n';
+    s += '        puzzleArea.innerHTML = \'<div class="sq-label" style="color:#6ef7a6">✔ Puzzle complete</div>\';\n';
+    s += '      }\n';
+    s += '    } else {\n';
+    s += '      node.classList.add("wrong");\n';
+    s += '      setTimeout(function(){ node.classList.remove("wrong"); }, 400);\n';
+    s += '      beep(200, 0.2);\n';
+    s += '      puzzleProgress = 0;\n';
+    s += '      grid.querySelectorAll(".puzzle-node").forEach(function(n){ n.classList.remove("hit"); });\n';
+    s += '      setTimeout(previewSeq, 600);\n';
+    s += '    }\n';
+    s += '  });\n';
+    s += '}\n';
+
+s += 'var shakePassed = !SHAKE_ON;\n';
+s += 'var shakeCount = 0;\n';
+s += 'var SHAKE_THRESHOLD = 20;\n';  // ← عتبة أقل
+s += 'var SHAKE_NEEDED = 5;\n';
+s += 'if (SHAKE_ON) {\n';
+s += '  var shakeUI = document.createElement("div");\n';
+s += '  shakeUI.id = "shakeUI";\n';
+s += '  shakeUI.style.cssText = "margin:8px 0;padding:10px;background:rgba(168,85,247,0.1);border:1px solid var(--accent);border-radius:10px;text-align:center;font-size:12px;color:var(--accent);";\n';
+s += '  shakeUI.innerHTML = "📱 هز الموبايل " + SHAKE_NEEDED + " مرات للفتح<br><span id=\\"shakeProgress\\" style=\\"font-size:11px;color:#9aa0ab;\\">0 / " + SHAKE_NEEDED + "</span>";\n';
+s += '  pinArea.appendChild(shakeUI);\n';
+s += '  var updateShakeUI = function(){\n';
+s += '    var el = document.getElementById("shakeProgress");\n';
+s += '    if (el) el.textContent = shakeCount + " / " + SHAKE_NEEDED;\n';
+s += '    if (shakeCount >= SHAKE_NEEDED) {\n';
+s += '      shakePassed = true;\n';
+s += '      if (el) { el.textContent = "✔ تم — الحين تقدر تدخل الرمز"; el.style.color = "#6ef7a6"; }\n';
+s += '      shakeUI.style.borderColor = "#6ef7a6";\n';
+s += '      shakeUI.style.color = "#6ef7a6";\n';
+s += '    }\n';
+s += '  };\n';
+s += '  var startShakeListener = function(){\n';
+s += '    if (!window.DeviceMotionEvent) {\n';
+s += '      shakePassed = true;\n';
+s += '      shakeUI.innerHTML = "📱 الجهاز ما فيه حساس — الفتح مباشر";\n';
+s += '      shakeUI.style.color = "#6ef7a6";\n';
+s += '      shakeUI.style.borderColor = "#6ef7a6";\n';
+s += '      return;\n';
+s += '    }\n';
+s += '    var lastShake = 0;\n';
+s += '    window.addEventListener("devicemotion", function(e){\n';
+s += '      var a = e.accelerationIncludingGravity;\n';
+s += '      if (!a) return;\n';
+s += '      var mag = Math.abs(a.x||0) + Math.abs(a.y||0) + Math.abs(a.z||0);\n';
+s += '      var now = Date.now();\n';
+s += '      if (mag > SHAKE_THRESHOLD && now - lastShake > 150 && shakeCount < SHAKE_NEEDED) {\n';
+s += '        lastShake = now;\n';
+s += '        shakeCount++;\n';
+s += '        beep(600 + shakeCount * 100, 0.1);\n';
+s += '        updateShakeUI();\n';
+s += '      }\n';
+s += '    });\n';
+s += '  };\n';
+s += '  // iOS 13+ يحتاج إذن\n';
+s += '  if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {\n';
+s += '    shakeUI.innerHTML = "📱 اضغط هنا لتفعيل الهز<br><span style=\\"font-size:11px;color:#9aa0ab;\\">مطلوب من iOS</span>";\n';
+s += '    shakeUI.style.cursor = "pointer";\n';
+s += '    shakeUI.addEventListener("click", function(){\n';
+s += '      DeviceMotionEvent.requestPermission().then(function(state){\n';
+s += '        if (state === "granted") {\n';
+s += '          shakeUI.style.cursor = "default";\n';
+s += '          shakeUI.innerHTML = "📱 هز الموبايل " + SHAKE_NEEDED + " مرات<br><span id=\\"shakeProgress\\" style=\\"font-size:11px;color:#9aa0ab;\\">0 / " + SHAKE_NEEDED + "</span>";\n';
+s += '          startShakeListener();\n';
+s += '        } else {\n';
+s += '          shakeUI.innerHTML = "❌ ما تم منح الإذن — الفتح مباشر";\n';
+s += '          shakePassed = true;\n';
+s += '        }\n';
+s += '      }).catch(function(){\n';
+s += '        shakeUI.innerHTML = "❌ فشل طلب الإذن — الفتح مباشر";\n';
+s += '        shakePassed = true;\n';
+s += '      });\n';
+s += '    });\n';
+s += '  } else {\n';
+s += '    startShakeListener();\n';
+s += '  }\n';
+s += '}\n';
+
+    s += 'if (ANTI_DEBUG) {\n';
+    s += '  setInterval(function(){\n';
+    s += '    var open = window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160;\n';
+    s += '    if (open) document.documentElement.style.setProperty("--accent", "#ff3030");\n';
+    s += '  }, 1200);\n';
+    s += '}\n';
+
+    s += 'if (ANIMATED_BG) {\n';
+    s += '  var bg = document.createElement("div");\n';
+    s += '  bg.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden";\n';
+    s += '  document.body.appendChild(bg);\n';
+    s += '  for (var i = 0; i < 30; i++) {\n';
+    s += '    var p = document.createElement("div");\n';
+    s += '    p.style.cssText = "position:absolute;width:3px;height:3px;border-radius:50%;opacity:0.35;left:" + (Math.random()*100) + "vw;top:" + (Math.random()*100) + "vh;background:" + PARTICLE_COLORS[i % PARTICLE_COLORS.length];\n';
+    s += '    bg.appendChild(p);\n';
+    s += '    p.animate([{transform:"translate(0,0)",opacity:0.15},{transform:"translate(" + (Math.random()*200-100) + "px," + (Math.random()*200-100) + "px)",opacity:0.45}],{duration:8000+Math.random()*12000,direction:"alternate",iterations:Infinity,easing:"ease-in-out"});\n';
+    s += '  }\n';
+    s += '}\n';
+
+    s += 'var FILE_ICONS = { apk:"📦", html:"🌐", htm:"🌐", py:"🐍", js:"📜", json:"🧩", pdf:"📕", doc:"📝", docx:"📝", xls:"📊", xlsx:"📊", ppt:"📽️", pptx:"📽️", zip:"🗜️", rar:"🗜️", "7z":"🗜️", txt:"📄", csv:"📋", mp3:"🎵", wav:"🎵", m4a:"🎵", exe:"⚙️", ipa:"📱" };\n';
+    s += 'function getFileIcon(name){ return FILE_ICONS[(name||"").split(".").pop().toLowerCase()] || "📎"; }\n';
+    s += 'function downloadDataUrl(url, name){ var a = document.createElement("a"); a.href = url; a.download = name; a.rel = "noopener"; document.body.appendChild(a); a.click(); document.body.removeChild(a); }\n';
+    s += 'function extFromDataUrl(u){ var m = /^data:([^;]+);base64,/.exec(u||""); if (!m) return "bin"; var e = m[1].split("/")[1] || "bin"; if (e === "jpeg") e = "jpg"; if (e.indexOf("+") !== -1) e = e.split("+")[0]; return e; }\n';
+
+    s += 'function typewriteText(el, text){\n';
+    s += '  el.textContent = "";\n';
+    s += '  var i = 0;\n';
+    s += '  var next = function(){\n';
+    s += '    if (i >= text.length) { el.classList.remove("typewriter"); return; }\n';
+    s += '    el.textContent += text.charAt(i++);\n';
+    s += '    setTimeout(next, 22);\n';
+    s += '  };\n';
+    s += '  next();\n';
+    s += '}\n';
+
+    s += 'function revealContent(data){\n';
+    s += '  interiorContent.innerHTML = "";\n';
+    s += '  var media = data.media || [];\n';
+    s += '  if (data.message) {\n';
+    s += '    var p = document.createElement("p");\n';
+    s += '    if (TYPEWRITER) { p.className = "typewriter"; interiorContent.appendChild(p); typewriteText(p, data.message); }\n';
+    s += '    else { p.textContent = data.message; interiorContent.appendChild(p); }\n';
+    s += '    if (COPY_MSG) {\n';
+    s += '      var actions = document.createElement("div"); actions.className = "msg-actions";\n';
+    s += '      var copyBtn = document.createElement("button"); copyBtn.type = "button"; copyBtn.textContent = "📋 نسخ";\n';
+    s += '      copyBtn.addEventListener("click", function(){\n';
+    s += '        try { navigator.clipboard.writeText(data.message); copyBtn.textContent = "✔ تم"; setTimeout(function(){ copyBtn.textContent = "📋 نسخ"; }, 1500); } catch (e) {}\n';
+    s += '      });\n';
+    s += '      actions.appendChild(copyBtn);\n';
+    s += '      interiorContent.appendChild(actions);\n';
+    s += '    }\n';
+    s += '  }\n';
+    s += '  if (media.length) {\n';
+    s += '    var controls = document.createElement("div"); controls.className = "media-controls";\n';
+    s += '    var selAllLabel = document.createElement("label");\n';
+    s += '    var selAll = document.createElement("input"); selAll.type = "checkbox";\n';
+    s += '    selAllLabel.appendChild(selAll); selAllLabel.appendChild(document.createTextNode("تحديد الكل"));\n';
+    s += '    var dlBtn = document.createElement("button"); dlBtn.type = "button"; dlBtn.textContent = "تنزيل المحدد"; dlBtn.disabled = true;\n';
+    s += '    controls.appendChild(selAllLabel); controls.appendChild(dlBtn); interiorContent.appendChild(controls);\n';
+    s += '    var list = document.createElement("div"); list.className = "media-list";\n';
+    s += '    media.forEach(function(item, idx){\n';
+    s += '      var wrap = document.createElement("div"); wrap.className = "media-reveal-item";\n';
+    s += '      var cb = document.createElement("input"); cb.type = "checkbox"; cb.className = "media-select"; cb.dataset.idx = String(idx);\n';
+    s += '      wrap.appendChild(cb);\n';
+    s += '      if (item.kind === "file") {\n';
+    s += '        var card = document.createElement("div"); card.className = "file-card";\n';
+    s += '        var icon = document.createElement("div"); icon.className = "file-card-icon"; icon.textContent = getFileIcon(item.name);\n';
+    s += '        var nm = document.createElement("div"); nm.className = "file-card-name"; nm.textContent = item.name || "ملف";\n';
+    s += '        card.appendChild(icon); card.appendChild(nm); wrap.appendChild(card);\n';
+    s += '      } else {\n';
+    s += '        var el = document.createElement(item.kind === "image" ? "img" : "video"); el.src = item.data;\n';
+    s += '        if (item.kind === "video") el.controls = true;\n';
+    s += '        wrap.appendChild(el);\n';
+    s += '      }\n';
+    s += '      if (item.caption) { var c = document.createElement("div"); c.className = "media-caption"; c.textContent = item.caption; wrap.appendChild(c); }\n';
+    s += '      list.appendChild(wrap);\n';
+    s += '    });\n';
+    s += '    interiorContent.appendChild(list);\n';
+    s += '    var upd = function(){ dlBtn.disabled = !Array.from(list.querySelectorAll(".media-select")).some(function(c){ return c.checked; }); };\n';
+    s += '    selAll.addEventListener("change", function(){ list.querySelectorAll(".media-select").forEach(function(c){ c.checked = selAll.checked; }); upd(); });\n';
+    s += '    list.addEventListener("change", function(e){ if (e.target.classList.contains("media-select")) upd(); });\n';
+    s += '    dlBtn.addEventListener("click", function(){\n';
+    s += '      var checked = Array.from(list.querySelectorAll(".media-select:checked"));\n';
+    s += '      var i = 0;\n';
+    s += '      var next = function(){\n';
+    s += '        if (i >= checked.length) return;\n';
+    s += '        var c = checked[i++];\n';
+    s += '        var idx = parseInt(c.dataset.idx, 10);\n';
+    s += '        var item = media[idx];\n';
+    s += '        var name = item.name || ("vault_media_" + (idx+1) + "." + extFromDataUrl(item.data));\n';
+    s += '        downloadDataUrl(item.data, name);\n';
+    s += '        setTimeout(next, 250);\n';
+    s += '      };\n';
+    s += '      next();\n';
+    s += '    });\n';
+    s += '  }\n';
+    s += '  requestAnimationFrame(function(){ interiorContent.style.opacity = "1"; interiorContent.style.transform = "scale(1)"; });\n';
+    s += '}\n';
+
+    s += 'function runCountdown(){\n';
+    s += '  return new Promise(function(resolve){\n';
+    s += '    if (!COUNTDOWN) return resolve();\n';
+    s += '    var cd = document.createElement("div");\n';
+    s += '    cd.className = "countdown-display";\n';
+    s += '    cd.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9998;pointer-events:none;background:rgba(0,0,0,0.65);";\n';
+    s += '    document.body.appendChild(cd);\n';
+    s += '    var nums = [3, 2, 1];\n';
+    s += '    var i = 0;\n';
+    s += '    var next = function(){\n';
+    s += '      if (i >= nums.length) { cd.remove(); return resolve(); }\n';
+    s += '      cd.textContent = nums[i++];\n';
+    s += '      cd.style.animation = "none"; void cd.offsetWidth; cd.style.animation = "cdPulse 1s ease-in-out";\n';
+    s += '      beep(400 + i * 200, 0.2, 0.1);\n';
+    s += '      setTimeout(next, 1000);\n';
+    s += '    };\n';
+    s += '    next();\n';
+    s += '  });\n';
+    s += '}\n';
+
+    s += 'function tryUnlock(){\n';
+    s += '  if (RATE_LIMIT && getLockUntil() > Date.now()) return;\n';
+    s += '  if (!gatePassed) { statusMsg.className = "status-msg error"; statusMsg.textContent = "مرر لقبول الشروط"; return; }\n';
+    s += '  if (!puzzlePassed) { statusMsg.className = "status-msg error"; statusMsg.textContent = "أكمل الـ puzzle"; return; }\n';
+    s += '  if (!shakePassed) { statusMsg.className = "status-msg error"; statusMsg.textContent = "هز الموبايل 5 مرات"; return; }\n';
+    s += '  if (SQ_ENABLED) {\n';
+    s += '    var sqi = document.getElementById("sqInput");\n';
+    s += '    if (!sqi || !sqi.value.trim()) { statusMsg.className = "status-msg error"; statusMsg.textContent = "أجب على السؤال"; return; }\n';
+    s += '    if (sqi.value.trim().toLowerCase() !== SQ_ANSWER) { redFlashOnce(); statusMsg.className = "status-msg error"; statusMsg.textContent = "إجابة غلط"; return; }\n';
+    s += '  }\n';
+    s += '  if (PIN_ENABLED) {\n';
+    s += '    var pi = document.getElementById("pinInput");\n';
+    s += '    if (!pi || pi.value.trim() !== PIN_VALUE) { redFlashOnce(); statusMsg.className = "status-msg error"; statusMsg.textContent = "PIN غلط"; return; }\n';
+    s += '  }\n';
+    s += '  if (MATH_GATE) {\n';
+    s += '    var mi = document.getElementById("mathInput");\n';
+    s += '    if (!mi || parseInt(mi.value, 10) !== mathAnswer) { redFlashOnce(); statusMsg.className = "status-msg error"; statusMsg.textContent = "جواب غلط"; return; }\n';
+    s += '  }\n';
+    s += '  var code = codeInput.value;\n';
+    s += '  if (!code) return;\n';
+    s += '  unlockBtn.disabled = true; codeInput.disabled = true;\n';
+    s += '  statusMsg.className = "status-msg"; statusMsg.textContent = "جاري التحقق...";\n';
+    s += '  setProgressUI(15, "قراءة الملف...");\n';
+    s += '  dialBar.classList.add("scanning");\n';
+    s += '  var payload = null;\n';
+    s += '  var unlockedOk = false;\n';
+    s += '  var burned = false;\n';
+    s += '  wait(400)\n';
+    s += '    .then(function(){ setProgressUI(35, "اشتقاق المفتاح (" + ITERATIONS.toLocaleString() + ")..."); return wait(500); })\n';
+    s += '    .then(function(){ dialBar.classList.remove("scanning"); return deriveKey(code, fromB64(SALT_B64), "decrypt"); })\n';
+    s += '    .then(function(key){ setProgressUI(60, "فك التشفير..."); return crypto.subtle.decrypt({ name:"AES-GCM", iv: fromB64(IV_B64) }, key, fromB64(CIPHER_B64)); })\n';
+    s += '    .then(function(plainBuf){\n';
+    s += '      var plainBytes = new Uint8Array(plainBuf);\n';
+    s += '      if (HMAC_ENABLED && HMAC_B64) {\n';
+    s += '        setProgressUI(72, "التحقق من التوقيع...");\n';
+    s += '        return sha256(new TextEncoder().encode(code + "|" + VAULT_ID + "|hmac")).then(function(hk){\n';
+    s += '          return crypto.subtle.importKey("raw", hk, { name:"HMAC", hash:"SHA-256" }, false, ["verify"]).then(function(k){\n';
+    s += '            return crypto.subtle.verify("HMAC", k, fromB64(HMAC_B64), fromB64(CIPHER_B64));\n';
+    s += '          });\n';
+    s += '        }).then(function(ok){\n';
+    s += '          if (!ok) {\n';
+    s += '            var tc = getInt(TAMPER_KEY, 0) + 1; localStorage.setItem(TAMPER_KEY, String(tc));\n';
+    s += '            if (BURN_ON_TAMPER && tc >= 2) { burned = true; throw new Error("BURN"); }\n';
+    s += '            throw new Error("HMAC");\n';
+    s += '          }\n';
+    s += '          if (COMPRESSED) return gzipDecompress(plainBytes);\n';
+    s += '          return plainBytes;\n';
+    s += '        });\n';
+    s += '      }\n';
+    s += '      if (COMPRESSED) return gzipDecompress(plainBytes);\n';
+    s += '      return plainBytes;\n';
+    s += '    })\n';
+    s += '    .then(function(finalBytes){ setProgressUI(88, "تحليل المحتوى..."); payload = JSON.parse(new TextDecoder().decode(finalBytes)); unlockedOk = true; })\n';
+    s += '    .catch(function(err){ payload = null; })\n';
+    s += '    .then(function(){\n';
+    s += '      if (burned) {\n';
+    s += '        vaultFrame.style.display = "none";\n';
+    s += '        var bs = document.getElementById("burnedScreen"); if (bs) { bs.style.display = "block"; document.body.appendChild(bs); }\n';
+    s += '        return;\n';
+    s += '      }\n';
+    s += '      if (!unlockedOk) {\n';
+    s += '        var locked = registerFail();\n';
+    s += '        redFlashOnce(); vaultDoor.classList.add("error"); dialBar.classList.add("wrong");\n';
+    s += '        setTimeout(function(){ vaultDoor.classList.remove("error"); dialBar.classList.remove("wrong"); }, 450);\n';
+    s += '        hideProgressUI();\n';
+    s += '        if (locked) { statusMsg.className = "status-msg error"; statusMsg.textContent = "اتقفلت مؤقتًا"; }\n';
+    s += '        else { statusMsg.className = "status-msg error"; statusMsg.textContent = "كود غلط"; unlockBtn.disabled = false; codeInput.disabled = false; }\n';
+    s += '        return;\n';
+    s += '      }\n';
+    s += '      if (DEVICE_BIND) {\n';
+    s += '        return computeFp().then(function(fp){\n';
+    s += '          var bound = localStorage.getItem(FPBIND_KEY);\n';
+    s += '          if (!bound) { localStorage.setItem(FPBIND_KEY, fp); return true; }\n';
+    s += '          if (bound !== fp) { statusMsg.className = "status-msg error"; statusMsg.textContent = "مرتبط بجهاز آخر"; return false; }\n';
+    s += '          return true;\n';
+    s += '        });\n';
+    s += '      }\n';
+    s += '      return true;\n';
+    s += '    })\n';
+    s += '    .then(function(canProceed){\n';
+    s += '      if (canProceed === false || !unlockedOk) return;\n';
+    s += '      localStorage.setItem(ATTEMPTS_KEY, "0"); localStorage.removeItem(LOCKUNTIL_KEY);\n';
+    s += '      if (ONE_TIME) localStorage.setItem(STORAGE_KEY, "1");\n';
+    s += '      setProgressUI(100, "تم!");\n';
+    s += '      statusMsg.className = "status-msg success"; statusMsg.textContent = "الرمز صحيح…";\n';
+    s += '      vaultDoor.classList.add("thunk");\n';
+    s += '      try { if (navigator.vibrate) navigator.vibrate([35,25,35]); } catch (e) {}\n';
+    s += '      return wait(450).then(function(){\n';
+    s += '        vaultDoor.classList.remove("thunk");\n';
+    s += '        dialBar.classList.add("correct"); lockStatusEl.textContent = "جاري الفتح...";\n';
+    s += '        return wait(350);\n';
+    s += '      }).then(function(){\n';
+    s += '        dialBar.classList.add("open"); dialCheck.classList.add("show");\n';
+    s += '        lockStatusEl.textContent = "مفتوح ✓"; lockStatusEl.classList.add("open");\n';
+    s += '        statusMsg.textContent = ""; hideProgressUI();\n';
+    s += '        return wait(500);\n';
+    s += '      }).then(function(){\n';
+    s += '        flashOnce(); burstParticles();\n';
+    s += '        vaultDoor.classList.add("leaving");\n';
+    s += '        return wait(520);\n';
+    s += '      }).then(function(){ return runCountdown(); })\n';
+    s += '      .then(function(){\n';
+    s += '        revealContent(payload);\n';
+    s += '        return wait(300);\n';
+    s += '      }).then(function(){\n';
+    s += '        runCelebration();\n';
+    s += '        if (RECEIPT_ON) {\n';
+    s += '          return wait(2500).then(function(){\n';
+    s += '            var rs = document.getElementById("receiptScreen");\n';
+    s += '            if (!rs) return;\n';
+    s += '            rs.style.display = "block";\n';
+    s += '            document.getElementById("rcTime").textContent = new Date().toLocaleString("ar");\n';
+    s += '            document.getElementById("rcCreated").textContent = new Date(CREATED_AT).toLocaleString("ar");\n';
+    s += '            computeFp().then(function(fp){ var el = document.getElementById("rcFp"); if (el) el.textContent = fp.slice(0,16) + "…"; });\n';
+    s += '            document.getElementById("rcHash").textContent = INNER_HASH.slice(0,16) + "…";\n';
+    s += '            document.getElementById("rcId").textContent = VAULT_ID;\n';
+    s += '            document.body.appendChild(rs);\n';
+    s += '          });\n';
+    s += '        }\n';
+    s += '      });\n';
+    s += '    });\n';
+    s += '}\n';
+
+    s += 'unlockBtn.addEventListener("click", tryUnlock);\n';
+    s += 'codeInput.addEventListener("keydown", function(e){ if (e.key === "Enter") tryUnlock(); });\n';
+
+    s += '})();\n';
+    s += '<\/script>';
+
+    return s;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BOOT
+  // ═══════════════════════════════════════════════════════════
+  renderTypeChips();
+  computeFingerprint().then(fp => { state.fingerprint = fp; updateActiveFeatures(); });
+  updateActiveFeatures();
+  renderStrength('');
+
+  // طبّق أول شكل افتراضي
+  if (typeof NRS_SHAPES !== 'undefined' && NRS_SHAPES.length) {
+    selectType('nrs-0');
+  }
+
+  console.log('%c🔒 Vault Creator v8.0 — NRS Shapes', 'color:#a855f7;font-weight:bold;font-size:14px');
+  console.log('%cLoaded ' + (typeof NRS_SHAPES !== 'undefined' ? NRS_SHAPES.length : 0) + ' shapes', 'color:#6a6f7a');
+
+})();
 </script>
+
 </body>
 </html>"""
 }
@@ -3122,3 +5841,6 @@ class VaultShareProvider : ContentProvider() {
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
 }
+
+
+
